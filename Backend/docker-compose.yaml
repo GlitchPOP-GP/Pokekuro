@@ -1,0 +1,49 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: pokekuro-db
+
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-pokekuro}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-pokekuro}
+      - POSTGRES_DB=${POSTGRES_DB:-pokekuro}
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 初回起動時のみ自動実行される（db/migrations/*.sql をファイル名順に実行）
+      - ./db/migrations:/docker-entrypoint-initdb.d
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pokekuro}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: .
+    container_name: pokekuro-api
+
+    environment:
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-pokekuro}:${POSTGRES_PASSWORD:-pokekuro}@db:5432/${POSTGRES_DB:-pokekuro}
+      - JWT_SECRET=${JWT_SECRET:-dev-secret}
+      - PORT=4000
+
+    # Frontend の docker-compose が期待する API ポート（HOST_IP:8001）に合わせる
+    ports:
+      - "8001:4000"
+
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+
+    command: npm run dev
+
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  pgdata:
