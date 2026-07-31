@@ -57,11 +57,10 @@ services:
       # pipeline と「同一の絶対パス」で共有する。
       # fittingJobs.ts は絶対パスを JSON でやり取りするため、
       # 両コンテナでパスが一致していることが動作条件。
-      - media:/app/public/generated
+      #
+      - ./Backend/public/generated:/app/public/generated
+      - ./Backend/public/uploads:/app/public/uploads
       - work:/app/tmp
-      # アップロードされた元写真。pipeline が Gemini/Meshy の入力として
-      # 直接読むため、生成物とは別に共有しておく必要がある。
-      - uploads:/app/public/uploads
     depends_on:
       db:
         condition: service_healthy
@@ -96,9 +95,10 @@ services:
       # コンテナには GPU が無いため EEVEE は使えない（検証レンダリング用）
       POKEKURO_RENDER_ENGINE: CYCLES
     volumes:
-      - media:/app/public/generated
+      # api と同一の絶対パスであることが動作条件（api 側のコメント参照）
+      - ./Backend/public/generated:/app/public/generated
+      - ./Backend/public/uploads:/app/public/uploads
       - work:/app/tmp
-      - uploads:/app/public/uploads
     healthcheck:
       test: ["CMD", "python", "-c",
              "import urllib.request; urllib.request.urlopen('http://localhost:9000/health')"]
@@ -163,6 +163,6 @@ services:
 
 volumes:
   pgdata:
-  media:   # api が配信する生成物（Gemini画像・フィット済みGLB）
-  work:    # api / pipeline 間の中間ファイル
-  uploads: # アップロードされた元写真（api が受信し pipeline が読む）
+  work:    # api / pipeline 間の中間ファイル（共有不要・使い捨て）
+  # generated / uploads は ./Backend/public 配下への bind mount に変更したため
+  # 名前付きボリュームは持たない（api サービスのコメント参照）。
