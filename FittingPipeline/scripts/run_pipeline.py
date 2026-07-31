@@ -18,7 +18,7 @@ import os
 import json
 import argparse
 
-BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+from blender_env import blender_exe
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(BASE)
@@ -29,7 +29,7 @@ def blender_run(script: str, extra_env: dict | None = None):
     if extra_env:
         env.update(extra_env)
     cmd = [
-        BLENDER,
+        blender_exe(),
         "--background",
         "--python", script,
     ]

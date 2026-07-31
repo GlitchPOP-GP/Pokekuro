@@ -3,13 +3,13 @@ import requests
 import time
 import os
 
-BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+from blender_env import blender_exe
 
 _BASE = os.path.dirname(os.path.abspath(__file__))
 GLB_PATH = os.path.join(os.path.dirname(_BASE), "assets", "avatar.glb")
 
 subprocess.run([
-    BLENDER,
+    blender_exe(),
     "-b",
     "--python",
     os.path.join(_BASE, "convert.py"),

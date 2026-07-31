@@ -9,13 +9,26 @@ try:
     import bpy  # Blender 内で実行中か判定
 except ImportError:
     import subprocess
-    BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+    from blender_env import blender_exe
     raise SystemExit(subprocess.run(
-        [BLENDER, "--background", "--python", os.path.abspath(__file__)]
+        [blender_exe(), "--background", "--python", os.path.abspath(__file__)]
     ).returncode)
 
 import math
 from mathutils import Vector
+
+
+def _render_engines():
+    """使用するレンダーエンジンの候補を返す。
+
+    POKEKURO_RENDER_ENGINE が指定されていればそれだけを使う。
+    Blender 内で実行されるため blender_env は import できない（自己完結させる）。
+    """
+    explicit = os.environ.get("POKEKURO_RENDER_ENGINE")
+    if explicit:
+        return (explicit,)
+    return ('BLENDER_EEVEE_NEXT', 'BLENDER_EEVEE', 'CYCLES')
+
 
 _BASE  = os.path.dirname(os.path.abspath(__file__))
 _ROOT  = os.path.dirname(_BASE)
@@ -63,7 +76,8 @@ cam_data = bpy.data.cameras.new("C"); cam = bpy.data.objects.new("C",cam_data)
 bpy.context.collection.objects.link(cam); bpy.context.scene.camera = cam
 
 scene = bpy.context.scene
-for eng in ('BLENDER_EEVEE_NEXT','BLENDER_EEVEE','CYCLES'):
+# GPU 無し環境では POKEKURO_RENDER_ENGINE=CYCLES を明示する
+for eng in _render_engines():
     try: scene.render.engine = eng; break
     except Exception: continue
 scene.render.resolution_x = 700; scene.render.resolution_y = 700

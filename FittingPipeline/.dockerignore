@@ -1,0 +1,11 @@
+# APIキーをイメージに焼き込まないための最重要行
+.env
+.env.*
+
+output/
+legacy/
+docs/
+__pycache__/
+*.pyc
+.claude/
+index.html

@@ -24,9 +24,9 @@ try:
     import bpy  # Blender 内で実行中か判定
 except ImportError:
     import subprocess
-    BLENDER = r"C:\Program Files\Blender Foundation\Blender 5.0\blender.exe"
+    from blender_env import blender_exe
     raise SystemExit(subprocess.run(
-        [BLENDER, "--background", "--python", os.path.abspath(__file__)]
+        [blender_exe(), "--background", "--python", os.path.abspath(__file__)]
     ).returncode)
 
 _BASE       = os.path.dirname(os.path.abspath(__file__))

@@ -5,10 +5,10 @@ import crypto from "crypto";
 import { pool } from "../db";
 import { AuthedRequest, requireAuth } from "../middleware/auth";
 import { ah } from "../utils";
-import { runPythonScript } from "../pipeline/runScript";
+import { callPipeline, pipelineHealth } from "../pipeline/runScript";
 
-const PIPELINE_ROOT = process.env.PIPELINE_ROOT || "";
-const SCRIPTS_DIR = path.join(PIPELINE_ROOT, "scripts");
+// 入出力ファイルは pipeline コンテナと同一の絶対パスで共有ボリュームに置かれる
+// （docker-compose.yaml の media / work ボリューム）。
 const PUBLIC_DIR = path.join(__dirname, "..", "..", "public");
 const TMP_DIR = path.join(__dirname, "..", "..", "tmp");
 const GENERATED_DIR = path.join(PUBLIC_DIR, "generated");
@@ -124,12 +124,27 @@ async function runGeminiPhase(jobId: number, sourceImagePath: string, category: 
   const geminiOut = path.join(GENERATED_DIR, `${uid}-gemini.png`);
 
   try {
+    // GEMINI_API_KEY が無い環境では抽出を飛ばし、アップロード画像をそのまま
+    // Meshy の入力にする。Gemini は「服だけを白背景・正面に整える」前処理でしか
+    // なく、3D化そのものは Meshy が担うため、白背景の服単体写真であれば
+    // これで十分な結果になる。人物が写っている写真では品質が落ちる。
+    const health = await pipelineHealth();
+    if (health && !health.gemini_key) {
+      console.log(`[fitting-job ${jobId}] step 1/3: gemini_extract をスキップ（キー未設定）`);
+      await updateJob(jobId, {
+        status: "awaiting_approval",
+        gemini_image_path: toPublicUrl(sourceImagePath),
+      });
+      console.log(`[fitting-job ${jobId}] awaiting approval (元画像をそのまま使用)`);
+      return;
+    }
+
     console.log(`[fitting-job ${jobId}] step 1/3: gemini_extract`);
-    const geminiResult = await runPythonScript(
-      path.join(SCRIPTS_DIR, "gemini_extract.py"),
-      [sourceImagePath, geminiOut, "--category", category],
-      SCRIPTS_DIR
-    );
+    const geminiResult = await callPipeline("extract", {
+      input_path: sourceImagePath,
+      output_path: geminiOut,
+      category,
+    });
     if (!geminiResult.success) throw new Error(`Gemini: ${geminiResult.error}`);
 
     const geminiPublicUrl = toPublicUrl(geminiOut);
@@ -157,21 +172,20 @@ async function runMeshyAndBlenderPhase(jobId: number, geminiOut: string, categor
 
   try {
     console.log(`[fitting-job ${jobId}] step 2/3: meshy_generate`);
-    const meshyResult = await runPythonScript(
-      path.join(SCRIPTS_DIR, "meshy_generate.py"),
-      [geminiOut, meshyOut],
-      SCRIPTS_DIR
-    );
+    const meshyResult = await callPipeline("generate", {
+      input_path: geminiOut,
+      output_path: meshyOut,
+    });
     if (!meshyResult.success) throw new Error(`Meshy: ${meshyResult.error}`);
     await updateJob(jobId, { meshy_glb_path: meshyOut });
 
     console.log(`[fitting-job ${jobId}] step 3/3: blender fit (${category})`);
-    const pipelineScript = category === "shirt" ? "run_pipeline.py" : "run_bottoms.py";
-    const fitResult = await runPythonScript(
-      path.join(SCRIPTS_DIR, pipelineScript),
-      ["--cloth", meshyOut, "--output", fittedFullOut, "--cloth-out", fittedClothOut],
-      SCRIPTS_DIR
-    );
+    const fitResult = await callPipeline("fit", {
+      category,
+      cloth_path: meshyOut,
+      output_path: fittedFullOut,
+      cloth_out: fittedClothOut,
+    });
     if (!fitResult.success) throw new Error(`Blenderフィッティング: ${fitResult.error}`);
 
     const glbUrl = `/generated/${uid}.glb`;

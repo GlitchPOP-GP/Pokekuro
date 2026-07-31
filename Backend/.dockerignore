@@ -1,0 +1,10 @@
+# APIキー等をイメージに焼き込まないための最重要行
+.env
+.env.*
+
+node_modules/
+tmp/
+public/uploads/*
+public/generated/*
+docker-compose.yaml
+README.md

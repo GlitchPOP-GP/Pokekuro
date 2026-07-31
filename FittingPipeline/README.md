@@ -15,6 +15,24 @@ yzl3Dmodel/
 └── .env              Meshy / Gemini の API キー
 ```
 
+## セットアップ（docker 外で直接動かす場合）
+
+
+```bash
+python -m venv .venv
+source .venv/bin/activate          # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+
+cp .env.example .env               # MESHY_API_KEY / GEMINI_API_KEY を記入
+```
+
+Blender は `BLENDER_PATH` → PATH 上の `blender` → OS ごとの既定パス
+の順に自動検出されます（`scripts/blender_env.py`）。検出できない場合のみ指定してください。
+
+```bash
+export BLENDER_PATH=/Applications/Blender.app/Contents/MacOS/Blender   # macOS の例
+```
+
 ## 使い方
 
 ```bash
@@ -44,6 +62,7 @@ python scripts/meshy_generate.py output/gemini.png assets/cloth.glb
 
 ## 注意点
 
-- 各スクリプトは Blender 実行ファイルのパスを `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe` に固定しています。バージョンが異なる場合は各スクリプト内の `BLENDER` 変数を書き換えてください。
+- `server.py` は各スクリプトを HTTP から実行するラッパーです（`/extract` `/generate` `/fit` `/health`）。Backend は `PIPELINE_URL` 経由でこれを呼びます。入出力ファイルは api コンテナと同一の絶対パスで共有ボリュームに置かれます。
+- 検証レンダリング（`render_*.py`）は GPU を要する EEVEE を優先します。GPU の無い環境では `POKEKURO_RENDER_ENGINE=CYCLES` を指定してください（コンテナでは compose が自動で設定します）。なお **Backend から呼ばれる製品パスにレンダリングは含まれません**。
 - `scripts/gemini_extract.py` / `scripts/meshy_generate.py` は CLI引数で入出力パスを受け取り、最後に結果を1行のJSONで stdout に出力する（Node.js から subprocess で呼ぶ想定）。旧 `Meshy.py` / `meshy_gen.py`（固定ファイル名の重複コード、`API_KEY`という誤った環境変数名を参照していたバグあり）は `meshy_generate.py` に統合済み。
 - `legacy/old_output_backup/` は旧 `3dmodel/` フォルダの中身（過去の出力バックアップ）です。不要なら削除して問題ありません。

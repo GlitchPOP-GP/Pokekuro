@@ -1,0 +1,168 @@
+name: pokekuro
+
+# =============================================================================
+#  pokekuro 統合 compose
+#
+#  用途ごとの起動:
+#    docker compose up -d                    … db + api + pipeline（既定）
+#    docker compose watch                    … 上記 + ソース変更の自動同期（開発）
+#    docker compose --profile web up -d      … + Web版フロント（提出・デモ用）
+#    docker compose --profile mobile up      … + Expo dev server（実機/シミュレータ）
+#
+#  旧 Backend/docker-compose.yaml と Frontend/docker-compose.yaml は
+#  このファイルに統合済み（削除してよい）。
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  #  PostgreSQL
+  #  db/migrations/*.sql は「空ボリュームでの初回起動時のみ」実行される。
+  #  やり直す場合は: docker compose down -v && docker compose up -d
+  # ---------------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: pokekuro-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pokekuro}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pokekuro}
+      POSTGRES_DB: ${POSTGRES_DB:-pokekuro}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./Backend/db/migrations:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pokekuro}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  #  API（Express / TypeScript）
+  #  Blender も Python も持たない。3D生成は pipeline に HTTP で委譲する。
+  # ---------------------------------------------------------------------------
+  api:
+    build: ./Backend
+    image: pokekuro-api:latest
+    container_name: pokekuro-api
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-pokekuro}:${POSTGRES_PASSWORD:-pokekuro}@db:5432/${POSTGRES_DB:-pokekuro}
+      JWT_SECRET: ${JWT_SECRET:-dev-secret}
+      PORT: 4000
+      PIPELINE_URL: http://pipeline:9000
+    ports:
+      - "${API_PORT:-8001}:4000"
+    volumes:
+      # pipeline と「同一の絶対パス」で共有する。
+      # fittingJobs.ts は絶対パスを JSON でやり取りするため、
+      # 両コンテナでパスが一致していることが動作条件。
+      - media:/app/public/generated
+      - work:/app/tmp
+      # アップロードされた元写真。pipeline が Gemini/Meshy の入力として
+      # 直接読むため、生成物とは別に共有しておく必要がある。
+      - uploads:/app/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+      pipeline:
+        condition: service_healthy
+    restart: unless-stopped
+    develop:
+      watch:
+        - action: sync
+          path: ./Backend/src
+          target: /app/src
+        - action: rebuild
+          path: ./Backend/package.json
+
+  # ---------------------------------------------------------------------------
+  #  FittingPipeline（Blender + Python）
+  #  外部APIキーを保持する唯一のサービス。
+  #  Blender に公式 linux-arm64 ビルドが無いため amd64 に固定する
+  #  （Apple Silicon では Docker Desktop の Rosetta で動作）。
+  # ---------------------------------------------------------------------------
+  pipeline:
+    build: ./FittingPipeline
+    image: pokekuro-pipeline:latest
+    container_name: pokekuro-pipeline
+    platform: linux/amd64
+    environment:
+      # 未設定でも compose は起動する（起動時ログと /health で警告し、
+      # 3D生成リクエスト時に明示的なエラーを返す）。
+      MESHY_API_KEY: ${MESHY_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-gemini-2.5-flash-image}
+      # コンテナには GPU が無いため EEVEE は使えない（検証レンダリング用）
+      POKEKURO_RENDER_ENGINE: CYCLES
+    volumes:
+      - media:/app/public/generated
+      - work:/app/tmp
+      - uploads:/app/public/uploads
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:9000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  #  Web版フロント（提出・デモ用）— profile: web
+  #  nginx が /api などを api にプロキシするため同一オリジンになり、
+  #  HOST_IP / LAN IP の環境依存が消える。
+  # ---------------------------------------------------------------------------
+  web:
+    profiles: ["web"]
+    build:
+      context: ./Frontend
+      dockerfile: Dockerfile.web
+    image: pokekuro-web:latest
+    container_name: pokekuro-web
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  #  Expo dev server（実機 / シミュレータ）— profile: mobile
+  #  実機の Expo Go から到達するには PC の LAN IP が必要。
+  #  `npm run dev`（Frontend/src/scripts/start.mjs）が HOST_IP を解決して渡す。
+  #  compose は profile に関係なくファイル全体を変数展開するため、
+  #  ここで ${HOST_IP:?...} は使えない（他サービスの操作まで失敗するため）。
+  # ---------------------------------------------------------------------------
+  expo:
+    profiles: ["mobile"]
+    build: ./Frontend
+    image: pokekuro-expo:latest
+    container_name: pokekuro-expo
+    working_dir: /app
+    ports:
+      - "8081:8081"
+      - "19000:19000"
+      - "19001:19001"
+      - "19002:19002"
+    environment:
+      EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
+      REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_IP:-localhost}
+      EXPO_PUBLIC_API_URL: http://${HOST_IP:-localhost}:${API_PORT:-8001}
+      CHOKIDAR_USEPOLLING: "true"
+      WATCHPACK_POLLING: "true"
+    command: npx expo start --host lan
+    stdin_open: true
+    tty: true
+    depends_on:
+      - api
+    develop:
+      watch:
+        - action: sync
+          path: ./Frontend/src
+          target: /app/src
+
+volumes:
+  pgdata:
+  media:   # api が配信する生成物（Gemini画像・フィット済みGLB）
+  work:    # api / pipeline 間の中間ファイル
+  uploads: # アップロードされた元写真（api が受信し pipeline が読む）

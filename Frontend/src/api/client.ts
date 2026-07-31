@@ -4,6 +4,9 @@
 // 実機で Expo Go を使う場合は localhost は端末自身を指してしまうため、
 // 開発PCの LAN IP（HOST_IP）を使う必要がある。docker 経由の起動（npm run dev）
 // では start.mjs が HOST_IP を解決して EXPO_PUBLIC_API_URL に埋め込む。
+//
+// Web版ビルド（Dockerfile.web）では "/" が入る。末尾スラッシュが落ちて "" になり、
+// 相対パス＝同一オリジンとして nginx 経由で api に届くため LAN IP に依存しない。
 
 const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8001";

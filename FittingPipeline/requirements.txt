@@ -1,0 +1,11 @@
+# 素の python3 で動くスクリプトの依存。
+# bpy / bmesh / mathutils は Blender 同梱の Python にあるため記載しない
+
+python-dotenv>=1.0
+requests>=2.31
+google-genai>=1.0
+pygltflib>=1.16
+
+# HTTP ラッパー（server.py）
+fastapi>=0.115
+uvicorn[standard]>=0.30

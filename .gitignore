@@ -1,0 +1,11 @@
+# 環境ごとの設定・APIキー（絶対にコミットしない）
+.env
+.env.local
+.env.*.local
+
+# docker save の成果物
+*.tar
+
+# OS
+.DS_Store
+Thumbs.db

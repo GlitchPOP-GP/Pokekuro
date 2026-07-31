@@ -5,13 +5,20 @@ DB スキーマは「グリッチポップ_ポケクロ_テーブル定義書」
 
 ## 起動
 
+compose ファイルはリポジトリルートに統合済みです。**ルートで**実行してください。
+
 ```bash
+cd ..
 cp .env.example .env
 docker compose up -d --build
 ```
 
-- `db`  … PostgreSQL 16（ホスト `localhost:5432`）
-- `api` … Express API（ホスト `localhost:8001` → コンテナ 4000）
+- `db`       … PostgreSQL 16（ホスト `localhost:5432`）
+- `api`      … Express API（ホスト `localhost:8001` → コンテナ 4000）
+- `pipeline` … Blender + Python（3D生成。`PIPELINE_URL=http://pipeline:9000` で呼ぶ）
+
+Blender も Python も api イメージには入っていません。3D生成は `pipeline` サービスへ
+HTTP で委譲し、入出力ファイルは共有ボリューム上の同一絶対パスでやり取りします。
 
 初回起動（＝空 volume）時に `db/migrations/*.sql` がファイル名順で自動実行される:
 
@@ -19,7 +26,7 @@ docker compose up -d --build
 2. `002_extend.sql` … UI 表示に必要な追加（`clothing_items.name`、`posts` の caption/いいね・コメント数、`today_picks` 表）
 3. `003_seed.sql`   … 旧 mockData の内容を初期データとして投入
 
-マイグレーション/シードをやり直したい場合は volume ごと作り直す:
+マイグレーション/シードをやり直したい場合は volume ごと作り直す（ルートで実行）:
 
 ```bash
 docker compose down -v && docker compose up -d --build
