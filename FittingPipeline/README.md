@@ -60,9 +60,3 @@ python scripts/gemini_extract.py 写真.jpg output/gemini.png --category shirt
 python scripts/meshy_generate.py output/gemini.png assets/cloth.glb
 ```
 
-## 注意点
-
-- `server.py` は各スクリプトを HTTP から実行するラッパーです（`/extract` `/generate` `/fit` `/health`）。Backend は `PIPELINE_URL` 経由でこれを呼びます。入出力ファイルは api コンテナと同一の絶対パスで共有ボリュームに置かれます。
-- 検証レンダリング（`render_*.py`）は GPU を要する EEVEE を優先します。GPU の無い環境では `POKEKURO_RENDER_ENGINE=CYCLES` を指定してください（コンテナでは compose が自動で設定します）。なお **Backend から呼ばれる製品パスにレンダリングは含まれません**。
-- `scripts/gemini_extract.py` / `scripts/meshy_generate.py` は CLI引数で入出力パスを受け取り、最後に結果を1行のJSONで stdout に出力する（Node.js から subprocess で呼ぶ想定）。旧 `Meshy.py` / `meshy_gen.py`（固定ファイル名の重複コード、`API_KEY`という誤った環境変数名を参照していたバグあり）は `meshy_generate.py` に統合済み。
-- `legacy/old_output_backup/` は旧 `3dmodel/` フォルダの中身（過去の出力バックアップ）です。不要なら削除して問題ありません。

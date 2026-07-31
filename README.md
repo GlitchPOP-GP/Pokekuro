@@ -109,5 +109,3 @@ open http://localhost:8080
   **Settings → General → Use Rosetta for x86/amd64 emulation** を有効にしてください。
   エミュレーション経由になるため、布シミュレーションは実機 amd64 より遅くなります。
 - **イメージサイズは合計 2〜3GB 程度**です。大半が Blender 本体です。
-- **ネイティブアプリ（.apk / .ipa）は Docker では作れません。** EAS Build を使ってください。
-  Docker で提出できるのは Web 版（`--profile web`）です。
