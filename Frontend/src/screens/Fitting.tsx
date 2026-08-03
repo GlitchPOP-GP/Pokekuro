@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { View, Alert } from "react-native";
 import { useRoute } from "@react-navigation/native";
 
 import ClosetDrawer from "../components/ClosetDrawer";
 import ModelViewer from "../components/ModelViewer";
 import { useClosetSelection } from "../hooks/useClosetSelection";
 import { useCloset } from "../hooks/useCloset";
+import { deleteClosetItem } from "../api/closet";
+import { ClosetItem } from "../types/closet";
 
 import { fittingStyles } from "../styles/screens/fitting";
 
@@ -21,15 +23,53 @@ export default function FittingScreen() {
     setSelectedTags,
     tags,
     filteredItems,
+    refetch,
   } = useCloset();
 
   const {
     selectedItems,
     toggleItemSelection,
     isItemSelected,
+    setSelectedItems,
   } = useClosetSelection(items, route.params?.selectedItem, (category) => {
     setSelectedCategory(category);
   });
+
+  // 長押しで削除。お気に入りタブの項目は複製（エイリアス）なので、
+  // 実体の id（originalItemId）を対象にする。
+  const handleLongPressItem = (item: ClosetItem) => {
+    const targetId = item.originalItemId || item.id;
+
+    Alert.alert(
+      "この服を削除しますか？",
+      `${item.name || "この服"}をクローゼットから削除します。元に戻せません。`,
+      [
+        { text: "キャンセル", style: "cancel" },
+        {
+          text: "削除",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await deleteClosetItem(targetId);
+
+              // 着用中のまま消すとアバターに服だけ残るので選択を外す
+              setSelectedItems((prev) => {
+                const next = { ...prev };
+                (Object.keys(next) as (keyof typeof next)[]).forEach((key) => {
+                  if (next[key] === targetId) delete next[key];
+                });
+                return next;
+              });
+
+              await refetch();
+            } catch (err: any) {
+              Alert.alert("削除に失敗しました", err?.message ?? String(err));
+            }
+          },
+        },
+      ]
+    );
+  };
 
 
   return (
@@ -72,6 +112,7 @@ export default function FittingScreen() {
         selectedItems={selectedItems}
         toggleItemSelection={toggleItemSelection}
         isItemSelected={isItemSelected}
+        onLongPressItem={handleLongPressItem}
         filteredItems={filteredItems}
       />
     </View>

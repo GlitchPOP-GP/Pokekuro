@@ -2,10 +2,9 @@
 node_modules/
 public/uploads/*
 !public/uploads/.gitkeep
-# フィット済み GLB はチームで共有するためコミットする。
-# （名前付きボリュームをやめて bind mount にしたのはこのため。
-#   docker-compose.yaml の api サービスのコメント参照）
-# Gemini の中間画像は承認UI用の使い捨てなので共有しない。
+# generated/ は実行時の生成物置き場（bind mount）。共有しない。
+# チームやレビュアーに渡したいデモ用 GLB は public/models/ に置くこと。
+# models/ は bind mount されないので api イメージに焼き込まれ、
+# イメージだけ渡しても表示できる。
 public/generated/*
 !public/generated/.gitkeep
-!public/generated/*.glb

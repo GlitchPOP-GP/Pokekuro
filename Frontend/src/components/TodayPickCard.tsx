@@ -78,7 +78,9 @@ export default function TodayPickCard() {
   const onMomentumScrollEnd = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
+    // 割る値は項目幅と一致していないといけない。
+    // 項目は SCREEN_WIDTH 幅で並んでいる（CARD_WIDTH は枠の見た目用）。
+    const index = Math.round(event.nativeEvent.contentOffset.x / SCREEN_WIDTH);
 
     setCurrentIndex(index);
     startAutoScroll();
@@ -100,6 +102,14 @@ export default function TodayPickCard() {
             data={todayPickData}
             keyExtractor={(item) => item.id}
             onMomentumScrollEnd={onMomentumScrollEnd}
+            // 項目幅は SCREEN_WIDTH 固定なので正確に返せる。
+            // これが無いと Web 版で自動スクロールの scrollToIndex が
+            // 「画面外の位置が計算できない」と例外を投げ、アプリ全体が落ちる。
+            getItemLayout={(_, index) => ({
+              length: SCREEN_WIDTH,
+              offset: SCREEN_WIDTH * index,
+              index,
+            })}
             style={{
               flex: 1,
             }}

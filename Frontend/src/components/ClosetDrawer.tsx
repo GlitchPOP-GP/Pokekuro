@@ -34,6 +34,7 @@ export default function ClosetDrawer({
   selectedItems,
   toggleItemSelection,
   isItemSelected,
+  onLongPressItem,
   filteredItems,
   tags,
 }: {
@@ -46,6 +47,8 @@ export default function ClosetDrawer({
   selectedItems: SelectedItems;
   toggleItemSelection: (item: ClosetItem) => void;
   isItemSelected: (item: ClosetItem) => boolean;
+  // 長押し。確認ダイアログと削除の実行は呼び出し側が担う。
+  onLongPressItem?: (item: ClosetItem) => void;
   filteredItems: ClosetItem[];
   tags: string[];
 }) {
@@ -170,6 +173,9 @@ export default function ClosetDrawer({
                 style={[styles.itemCard, isSelected && styles.selectedItemCard]}
                 activeOpacity={0.8}
                 onPress={() => toggleItemSelection(item)}
+                onLongPress={
+                  onLongPressItem ? () => onLongPressItem(item) : undefined
+                }
               >
                 <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
                 {isSelected && (

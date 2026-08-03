@@ -119,6 +119,13 @@ export async function createClosetItem(input: {
   return toClosetItem(row);
 }
 
+// サーバー側は所有者チェック付き（他人のアイテムは 404）。
+// clothing_item_tags / item_favorites / fitting_jobs は
+// ON DELETE CASCADE で一緒に消える。
+export async function deleteClosetItem(id: string): Promise<void> {
+  await api(`/api/clothing-items/${id}`, { method: "DELETE", auth: true });
+}
+
 export async function favoriteItem(id: string): Promise<void> {
   await api(`/api/clothing-items/${id}/favorite`, { method: "POST", auth: true });
 }

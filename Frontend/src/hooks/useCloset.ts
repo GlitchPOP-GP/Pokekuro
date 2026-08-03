@@ -10,6 +10,11 @@ export function useCloset() {
   const [selectedCategory, setSelectedCategory] = useState<ClosetCategory>("shirt");
   const [selectedTags, setSelectedTags] = useState<string[]>([""]);
 
+  // 削除など、画面遷移を伴わない更新のあとに呼ぶ。
+  const refetch = useCallback(async () => {
+    setItems(await fetchClosetItems());
+  }, []);
+
   // 画面にフォーカスが戻るたびに再取得する。
   // （タブは一度マウントされると生き続けるので、他の画面でアイテムを追加した後
   //   このタブに戻ってきた時に glb_url 等の最新状態を反映させるために必要）
@@ -59,5 +64,6 @@ export function useCloset() {
     setSelectedTags,
     tags,
     filteredItems,
+    refetch,
   };
 }

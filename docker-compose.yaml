@@ -1,18 +1,5 @@
 name: pokekuro
 
-# =============================================================================
-#  pokekuro 統合 compose
-#
-#  用途ごとの起動:
-#    docker compose up -d                    … db + api + pipeline（既定）
-#    docker compose watch                    … 上記 + ソース変更の自動同期（開発）
-#    docker compose --profile web up -d      … + Web版フロント（提出・デモ用）
-#    docker compose --profile mobile up      … + Expo dev server（実機/シミュレータ）
-#
-#  旧 Backend/docker-compose.yaml と Frontend/docker-compose.yaml は
-#  このファイルに統合済み（削除してよい）。
-# =============================================================================
-
 services:
   # ---------------------------------------------------------------------------
   #  PostgreSQL
@@ -20,17 +7,27 @@ services:
   #  やり直す場合は: docker compose down -v && docker compose up -d
   # ---------------------------------------------------------------------------
   db:
-    image: postgres:16-alpine
+    # マイグレーションを焼き込んだイメージ。素の postgres に bind mount すると
+    # 受け取った側にリポジトリのファイルが要り、イメージ配布で完結しないため。
+    build: ./Backend/db
+    image: pokekuro-db:latest
     container_name: pokekuro-db
+    # 配布先（Windows / Intel Mac / Linux）が x86_64 なので amd64 で焼く。
+    # Apple Silicon で作ると既定は arm64 になり、受け取った側で
+    # exec format error になって起動しないため。
+    platform: linux/amd64
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-pokekuro}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-pokekuro}
       POSTGRES_DB: ${POSTGRES_DB:-pokekuro}
     ports:
-      - "${DB_PORT:-5432}:5432"
+      # 既定値を 5432 から外してある。受け取った側のマシンに Postgres が
+      # 入っていると 5432 は塞がっており、compose up がバインドエラーで
+      # 丸ごと失敗するため（api は compose ネットワーク越しに db:5432 へ
+      # 繋ぐので、この公開ポートはホストから psql する時にしか使わない）。
+      - "${DB_PORT:-55432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./Backend/db/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pokekuro}"]
       interval: 5s
@@ -46,6 +43,8 @@ services:
     build: ./Backend
     image: pokekuro-api:latest
     container_name: pokekuro-api
+    # 配布先を選ばないよう amd64 で固定（db サービスのコメント参照）
+    platform: linux/amd64
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-pokekuro}:${POSTGRES_PASSWORD:-pokekuro}@db:5432/${POSTGRES_DB:-pokekuro}
       JWT_SECRET: ${JWT_SECRET:-dev-secret}
@@ -109,27 +108,9 @@ services:
     restart: unless-stopped
 
   # ---------------------------------------------------------------------------
-  #  Web版フロント（提出・デモ用）— profile: web
-  #  nginx が /api などを api にプロキシするため同一オリジンになり、
-  #  HOST_IP / LAN IP の環境依存が消える。
-  # ---------------------------------------------------------------------------
-  web:
-    profiles: ["web"]
-    build:
-      context: ./Frontend
-      dockerfile: Dockerfile.web
-    image: pokekuro-web:latest
-    container_name: pokekuro-web
-    ports:
-      - "${WEB_PORT:-8080}:80"
-    depends_on:
-      - api
-    restart: unless-stopped
-
-  # ---------------------------------------------------------------------------
   #  Expo dev server（実機 / シミュレータ）— profile: mobile
   #  実機の Expo Go から到達するには PC の LAN IP が必要。
-  #  `npm run dev`（Frontend/src/scripts/start.mjs）が HOST_IP を解決して渡す。
+  #  ホストの LAN IP はコンテナから取得できないため .env の HOST_IP に手で書く。
   #  compose は profile に関係なくファイル全体を変数展開するため、
   #  ここで ${HOST_IP:?...} は使えない（他サービスの操作まで失敗するため）。
   # ---------------------------------------------------------------------------
@@ -138,6 +119,8 @@ services:
     build: ./Frontend
     image: pokekuro-expo:latest
     container_name: pokekuro-expo
+    # 配布先を選ばないよう amd64 で固定（db サービスのコメント参照）
+    platform: linux/amd64
     working_dir: /app
     ports:
       - "8081:8081"
@@ -146,11 +129,20 @@ services:
       - "19002:19002"
     environment:
       EXPO_DEVTOOLS_LISTEN_ADDRESS: 0.0.0.0
+      # QR / Metro の宛先。これだけはコンテナ生成時に決め打ちになるため、
+      # 開発PCの LAN IP が変わったら .env を書き換えて作り直すこと。
       REACT_NATIVE_PACKAGER_HOSTNAME: ${HOST_IP:-localhost}
+      # API のベースURL。通常は client.ts が「端末が実際に繋がった Metro の
+      # ホスト」から実行時に導出するため使われないが、導出できなかった場合の
+      # フォールバックとして必ず渡しておく（渡さないと localhost に落ちて
+      # 実機からは一切通信できなくなる）。
       EXPO_PUBLIC_API_URL: http://${HOST_IP:-localhost}:${API_PORT:-8001}
+      EXPO_PUBLIC_API_PORT: ${API_PORT:-8001}
       CHOKIDAR_USEPOLLING: "true"
       WATCHPACK_POLLING: "true"
-    command: npx expo start --host lan
+    # 起動前に、焼き付けられた HOST_IP が今も到達可能かを確認して警告する
+    # （警告のみで起動は止めない）。
+    command: sh -c "node src/scripts/check-host.mjs; npx expo start --host lan"
     stdin_open: true
     tty: true
     depends_on:
