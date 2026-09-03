@@ -1,4 +1,6 @@
-export const textboxStyles = {
+import { StyleSheet } from "react-native";
+
+export const textboxStyles = StyleSheet.create({
   input: {
     width: "100%",
     maxWidth: 380,
@@ -8,4 +10,4 @@ export const textboxStyles = {
     borderColor: "#c4c2c2",
     backgroundColor: "#ffffff",
   },
-};
+});

@@ -34,7 +34,7 @@ export function useClosetSelection(
         }
       }
     }
-  }, [initialItemId]);
+  }, [initialItemId, items]);
 
   const toggleItemSelection = (item: ClosetItem) => {
     const { itemType } = item;

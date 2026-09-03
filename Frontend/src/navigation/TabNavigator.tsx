@@ -8,12 +8,14 @@ import ShopScreen from "../screens/Shop";
 import ProfileScreen from "../screens/Profile";
 
 import Footer from "../components/Footer";
+import type { TabParamList } from "./tabs";
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
 
 export default function TabNavigator() {
   return (
     <Tab.Navigator
+      id="MainTabs"
       screenOptions={{
         headerShown: false,
       }}

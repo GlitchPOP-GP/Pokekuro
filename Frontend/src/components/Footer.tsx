@@ -1,5 +1,5 @@
 import React from "react";
-import { View, StyleSheet, TouchableOpacity } from "react-native";
+import { Text, View, TouchableOpacity } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { footerStyles } from "../styles/components/footer";
 import { BlurView } from 'expo-blur';
@@ -44,6 +44,12 @@ export default function Footer({ state, navigation }: BottomTabBarProps) {
           if (!tab) return null;
 
           const onPress = () => {
+            const event = navigation.emit({
+              type: "tabPress",
+              target: route.key,
+              canPreventDefault: true,
+            });
+            if (event.defaultPrevented) return;
             navigation.navigate(route.name);
           };
 
@@ -52,6 +58,9 @@ export default function Footer({ state, navigation }: BottomTabBarProps) {
               key={route.key}
               style={footerStyles.button}
               onPress={onPress}
+              accessibilityRole="tab"
+              accessibilityLabel={tab.label}
+              accessibilityState={{ selected: isFocused }}
             >
               <View
                 style={[footerStyles.iconWrap, isFocused && footerStyles.activeIconWrap]}
@@ -63,6 +72,7 @@ export default function Footer({ state, navigation }: BottomTabBarProps) {
                   26,
                 )}
               </View>
+              <Text style={[footerStyles.label, isFocused && footerStyles.activeLabel]}>{tab.label}</Text>
             </TouchableOpacity>
           );
         })}

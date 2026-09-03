@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
-import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Platform, StyleSheet } from 'react-native';
 import { WebView, WebViewMessageEvent } from 'react-native-webview';
 
 import { SelectedItems } from '../hooks/useClosetSelection';
@@ -48,7 +48,10 @@ export default function ModelViewer({
   }, [selectedItems, items]);
 
   const handleMessage = (event: WebViewMessageEvent) => {
-    const data = event.nativeEvent.data;
+    handleViewerMessage(event.nativeEvent.data);
+  };
+
+  const handleViewerMessage = (data: string) => {
     if (data === 'ready') {
       setLoading(false);
     } else if (data === 'tap') {
@@ -59,21 +62,53 @@ export default function ModelViewer({
     }
   };
 
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const expectedOrigin = new URL(uri, window.location.href).origin;
+    const onWebMessage = (event: MessageEvent) => {
+      if (event.origin !== expectedOrigin || typeof event.data !== 'string') return;
+      handleViewerMessage(event.data);
+    };
+
+    window.addEventListener('message', onWebMessage);
+    return () => window.removeEventListener('message', onWebMessage);
+  }, [uri, onTap]);
+
   return (
     <View style={{ flex: 1 }}>
-      <WebView
-        key={uri}
-        source={{ uri }}
-        onMessage={handleMessage}
-        onLoadStart={() => setLoading(true)}
-        originWhitelist={['*']}
-        style={{ backgroundColor: 'transparent' }}
-        containerStyle={{ backgroundColor: 'transparent' }}
-        overScrollMode="never"
-        bounces={false}
-        javaScriptEnabled
-        domStorageEnabled
-      />
+      {Platform.OS === 'web'
+        ? React.createElement('iframe', {
+            key: uri,
+            src: uri,
+            title: '3D試着プレビュー',
+            onLoad: () => setLoading(false),
+            allow: 'fullscreen',
+            style: {
+              width: '100%',
+              height: '100%',
+              border: 0,
+              display: 'block',
+              backgroundColor: 'transparent',
+            },
+          })
+        : (
+          <WebView
+            key={uri}
+            source={{ uri }}
+            onMessage={handleMessage}
+            onLoadStart={() => setLoading(true)}
+            originWhitelist={getApiBaseUrl() ? [`${getApiBaseUrl()}/*`] : ['*']}
+            style={{ backgroundColor: 'transparent' }}
+            containerStyle={{ backgroundColor: 'transparent' }}
+            overScrollMode="never"
+            bounces={false}
+            javaScriptEnabled
+            domStorageEnabled
+            mixedContentMode="never"
+            allowsInlineMediaPlayback
+          />
+        )}
 
       {loading && (
         <View style={styles.loadingOverlay} pointerEvents="none">

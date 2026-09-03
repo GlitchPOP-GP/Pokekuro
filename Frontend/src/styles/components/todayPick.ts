@@ -1,8 +1,4 @@
-import { StyleSheet, Dimensions } from "react-native";
-
-const { width } = Dimensions.get("window");
-
-const CARD_WIDTH = width;
+import { StyleSheet } from "react-native";
 const CARD_HEIGHT = 240;
 
 export const todayPickStyles = StyleSheet.create({
@@ -11,9 +7,9 @@ export const todayPickStyles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 30,
     alignItems: "center",
+    paddingHorizontal: 15,
   },
   cardFrame: {
-    width: CARD_WIDTH - 30,
     height: CARD_HEIGHT + 20,
 
     backgroundColor: "#F8F3EC",
@@ -40,7 +36,7 @@ export const todayPickStyles = StyleSheet.create({
     overflow: "hidden",
   },
   card: {
-    width: CARD_WIDTH,
+    width: "100%",
     height: CARD_HEIGHT,
 
     backgroundColor: "#F8F3EC",
@@ -200,5 +196,22 @@ export const todayPickStyles = StyleSheet.create({
     width: 26,
     borderRadius: 4,
     backgroundColor: "#FFF",
+  },
+  emptyState: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+    backgroundColor: "#8d7768",
+  },
+  emptyTitle: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "800",
+    letterSpacing: 1,
+  },
+  emptyText: {
+    color: "rgba(255,255,255,0.82)",
+    fontSize: 13,
+    marginTop: 8,
   },
 });

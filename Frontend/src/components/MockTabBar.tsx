@@ -5,13 +5,18 @@ import { BlurView } from "expo-blur";
 import { mockTabBarStyles } from "../styles/components/mockTabBar";
 
 export default function MockTabBar({ navigation }: { navigation: any }) {
-  const tabs = [
+  const tabs: ReadonlyArray<{
+    name: string;
+    icon: string;
+    library: "Feather" | "MaterialCommunityIcons";
+    isCenter?: boolean;
+  }> = [
     { name: "Home", icon: "home", library: "Feather" },
     { name: "Fitting", icon: "hanger", library: "MaterialCommunityIcons" },
     { name: "Camera", icon: "camera-outline", library: "MaterialCommunityIcons", isCenter: true },
     { name: "Shop", icon: "shopping-bag", library: "Feather" },
     { name: "Profile", icon: "user", library: "Feather" },
-  ] as const;
+  ];
 
   const handlePress = (tabName: string) => {
     navigation.navigate("MainTabs", { screen: tabName });

@@ -46,11 +46,13 @@ export default function ProfileHeader({
 
       <View style={profileStyles.topRow}>
         <View style={profileStyles.avatar}>
-          <Image
-            source={user.avatar}
-            style={profileStyles.avatarImage}
-            resizeMode="cover"
-          />
+          {user.avatar ? (
+            <Image source={user.avatar} style={profileStyles.avatarImage} resizeMode="cover" />
+          ) : (
+            <View style={[profileStyles.avatarImage, { alignItems: "center", justifyContent: "center" }] }>
+              <MaterialIcons name="person" size={54} color="#8c7d72" />
+            </View>
+          )}
         </View>
 
         <View style={profileStyles.statsRow}>

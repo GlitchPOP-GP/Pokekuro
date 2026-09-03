@@ -1,4 +1,4 @@
-import React, { useState,useRef } from "react";
+import React, { useMemo, useState, useRef } from "react";
 import {
   View,
   TouchableOpacity,
@@ -8,6 +8,7 @@ import {
   Modal,
   Keyboard,
   Pressable,
+  Text,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
@@ -32,6 +33,13 @@ export default function ShopScreen() {
   const [isSearching, setIsSearching] = useState(false);
 
   const searchInputRef = useRef<TextInput>(null);
+  const filteredPosts = useMemo(() => {
+    const query = searchText.trim().toLocaleLowerCase("ja");
+    if (!query) return posts;
+    return posts.filter((post) =>
+      [post.user, post.caption].some((value) => value.toLocaleLowerCase("ja").includes(query))
+    );
+  }, [posts, searchText]);
 
   const openSearch = () => {
     setIsSearching(true);
@@ -65,6 +73,7 @@ export default function ShopScreen() {
 
               <TextBox
                 value={searchText}
+                onChangeText={setSearchText}
                 placeholder="検索"
                 style={shopStyles.searchInput}
                 editable={false}
@@ -74,7 +83,7 @@ export default function ShopScreen() {
         </View>
 
         <FlatList
-          data={posts}
+          data={filteredPosts}
           keyExtractor={(item) => item.id}
           numColumns={3}
           showsVerticalScrollIndicator={false}
@@ -82,13 +91,13 @@ export default function ShopScreen() {
             shopStyles.gridContent,
             { paddingTop: insets.top + 58 },
           ]}
-          renderItem={({ item, index }) => (
+          renderItem={({ item }) => (
             <TouchableOpacity
               style={shopStyles.gridItem}
               activeOpacity={0.85}
               onPress={() =>
                 navigation.navigate("PostDetail", {
-                  postIndex: index,
+                  postId: item.id,
                 })
               }
             >
@@ -97,8 +106,23 @@ export default function ShopScreen() {
                 style={shopStyles.gridItemImage}
                 resizeMode="cover"
               />
+              <View style={shopStyles.userBadge}>
+                <View style={shopStyles.userAvatarDot} />
+                <Text numberOfLines={1} style={shopStyles.userName}>{item.user || "ユーザー"}</Text>
+              </View>
             </TouchableOpacity>
           )}
+          ListEmptyComponent={
+            <View style={shopStyles.emptyContainer}>
+              <Feather name="search" size={34} color="#8d7c70" />
+              <Text style={shopStyles.emptyTitle}>
+                {searchText ? "一致する投稿がありません" : "投稿がまだありません"}
+              </Text>
+              <Text style={shopStyles.emptyText}>
+                {searchText ? "別のキーワードで検索してみてください" : "新しい投稿が追加されるとここに表示されます"}
+              </Text>
+            </View>
+          }
         />
 
         <Modal
@@ -143,6 +167,8 @@ export default function ShopScreen() {
                   style={shopStyles.searchInput}
                   returnKeyType="search"
                   onSubmitEditing={closeSearch}
+                  clearButtonMode="while-editing"
+                  accessibilityLabel="投稿を検索"
                 />
               </BlurView>
             </View>

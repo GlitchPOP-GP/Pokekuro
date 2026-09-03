@@ -1,4 +1,6 @@
-export const footerStyles =({
+import { StyleSheet } from "react-native";
+
+export const footerStyles = StyleSheet.create({
     container: {
         position: "absolute",
         bottom: 0,
@@ -23,6 +25,7 @@ export const footerStyles =({
         flex: 1,
         alignItems: "center",
         justifyContent: "center",
+        minHeight: 58,
     },
 
     iconWrap: {
@@ -34,10 +37,20 @@ export const footerStyles =({
     },
 
     activeIconWrap: {
-        backgroundColor: "#rgba(255, 255, 255, 0.85)",
+        backgroundColor: "rgba(255, 255, 255, 0.85)",
         shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 6,
         elevation: 3,
+    },
+    label: {
+        color: "#746a63",
+        fontSize: 10,
+        fontWeight: "600",
+        marginTop: -3,
+    },
+    activeLabel: {
+        color: "#2f241e",
+        fontWeight: "800",
     },
 });

@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TouchableOpacity, Image } from "react-native";
+import { View, Text, TouchableOpacity, Image, useWindowDimensions } from "react-native";
 
 import { addItemCardStyles } from "../styles/addItemCard";
 
@@ -8,11 +8,20 @@ type Props = {
 };
 
 export default function AddItemCard({ onPress }: Props) {
+  const { width } = useWindowDimensions();
+  const previewImages = width < 390
+    ? [require("../../assets/blue_denim_jeans.png")]
+    : [
+        require("../../assets/blue_denim_jeans.png"),
+        require("../../assets/brown_baseball_cap.png"),
+        require("../../assets/brown_cargo_pants.png"),
+      ];
   return (
     <TouchableOpacity
       style={addItemCardStyles.container}
       activeOpacity={0.9}
       onPress={onPress}
+      accessibilityLabel="アイテムを追加する"
     >
       <View style={addItemCardStyles.leftSection}>
         <View style={addItemCardStyles.plusButton}>
@@ -29,20 +38,9 @@ export default function AddItemCard({ onPress }: Props) {
       </View>
 
       <View style={addItemCardStyles.previewContainer}>
-        <Image
-          source={require("../../assets/blue_denim_jeans.png")}
-          style={addItemCardStyles.previewImage}
-        />
-
-        <Image
-          source={require("../../assets/brown_baseball_cap.png")}
-          style={addItemCardStyles.previewImage}
-        />
-
-        <Image
-          source={require("../../assets/brown_cargo_pants.png")}
-          style={addItemCardStyles.previewImage}
-        />
+        {previewImages.map((source, index) => (
+          <Image key={index} source={source} style={addItemCardStyles.previewImage} />
+        ))}
       </View>
     </TouchableOpacity>
   );

@@ -1,12 +1,12 @@
-import { TextInput, StyleProp, TextStyle } from "react-native";
+import { TextInput, TextInputProps } from "react-native";
 import { textboxStyles } from "../styles/textbox";
 
-type Props = {
+type Props = Omit<TextInputProps, "style"> & {
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
   secureTextEntry?: boolean;
-  style?: StyleProp<TextStyle>;
+  style?: TextInputProps["style"];
 };
 
 export default function TextBox({
@@ -15,6 +15,7 @@ export default function TextBox({
   placeholder,
   secureTextEntry,
   style,
+  ...inputProps
 }: Props) {
   return (
     <TextInput
@@ -24,6 +25,8 @@ export default function TextBox({
       onChangeText={onChangeText}
       secureTextEntry={secureTextEntry}
       style={[textboxStyles.input, style]}
+      autoCapitalize="none"
+      {...inputProps}
     />
   );
 }

@@ -1,13 +1,10 @@
-import { StyleSheet, Dimensions } from "react-native";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-const ITEM_SIZE = (SCREEN_WIDTH - 3) / 3;
+import { StyleSheet } from "react-native";
 
 export const shopStyles = StyleSheet.create({
   container: {
     flex: 1,
-    width: SCREEN_WIDTH,
+    width: "100%",
+    maxWidth: 900,
     alignSelf: "center",
   },
 
@@ -65,9 +62,9 @@ export const shopStyles = StyleSheet.create({
   },
 
   gridItem: {
-    width: ITEM_SIZE,
-    height: ITEM_SIZE * 1.35,
-    margin: 0.5,
+    flex: 1 / 3,
+    aspectRatio: 0.75,
+    margin: 1,
     backgroundColor: "#e8e0d8",
     overflow: "hidden",
   },
@@ -121,5 +118,23 @@ export const shopStyles = StyleSheet.create({
     right: 0,
     paddingHorizontal: 20,
     paddingBottom: 14,
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 32,
+    paddingTop: 100,
+  },
+  emptyTitle: {
+    marginTop: 14,
+    color: "#4b3b32",
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  emptyText: {
+    marginTop: 6,
+    color: "#7c6d63",
+    fontSize: 13,
+    textAlign: "center",
   },
 });

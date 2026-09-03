@@ -13,6 +13,10 @@ export const buttonStyles = StyleSheet.create({
         borderColor: "#abababe7",
     },
 
+    disabled: {
+        opacity: 0.55,
+    },
+
     text: {
         color: "white",
         fontSize: 18,

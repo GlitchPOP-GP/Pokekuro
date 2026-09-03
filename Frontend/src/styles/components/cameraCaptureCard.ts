@@ -2,8 +2,9 @@ import { StyleSheet } from "react-native";
 
 export const captureCardStyles = StyleSheet.create({
   container: {
-    width: 340,
-    height: 340,
+    width: "90%",
+    maxWidth: 360,
+    aspectRatio: 1,
     backgroundColor: "rgba(255, 255, 255, 0.85)",
     borderRadius: 28,
     position: "relative",

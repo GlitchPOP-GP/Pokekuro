@@ -18,6 +18,7 @@ type Props = {
   style?: StyleProp<ViewStyle>;
   textStyle?: StyleProp<TextStyle>;
   icon?: React.ReactNode;
+  disabled?: boolean;
 };
 
 export default function Button({
@@ -26,9 +27,17 @@ export default function Button({
   style,
   textStyle,
   icon,
+  disabled = false,
 }: Props) {
   return (
-    <TouchableOpacity onPress={onPress} style={[buttonStyles.button, style]}>
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled }}
+      activeOpacity={0.8}
+      style={[buttonStyles.button, disabled && buttonStyles.disabled, style]}
+    >
       <View
         style={{
           flexDirection: "row",

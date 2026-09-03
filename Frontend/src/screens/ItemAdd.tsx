@@ -5,8 +5,8 @@ import {
   TouchableOpacity,
   Image,
   ScrollView,
-  ImageBackground,
 } from "react-native";
+import { Feather } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 import type { RootStackParamList } from "../navigation/RootNavigator";
@@ -63,6 +63,16 @@ export default function ItemAdd({ navigation, route }: Props) {
   return (
     <GlobalStyles>
       <View style={[itemAddStyles.overlay, { paddingTop: insets.top }]}>
+        <View style={{ width: "100%", maxWidth: 640, alignSelf: "center", flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 10 }}>
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            accessibilityLabel="戻る"
+            style={{ width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center", backgroundColor: "rgba(255,255,255,0.72)" }}
+          >
+            <Feather name="chevron-left" size={25} color="#3f3129" />
+          </TouchableOpacity>
+          <Text style={{ marginLeft: 12, fontSize: 20, fontWeight: "800", color: "#3f3129" }}>アイテムを追加</Text>
+        </View>
         <ScrollView
           showsVerticalScrollIndicator={false}
           contentContainerStyle={itemAddStyles.scrollContent}

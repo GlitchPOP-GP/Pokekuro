@@ -96,6 +96,9 @@ export const postDetailStyles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
   },
+  followingButton: {
+    backgroundColor: "rgba(255,255,255,0.24)",
+  },
 
   caption: {
     fontSize: 14,
@@ -117,5 +120,33 @@ export const postDetailStyles = StyleSheet.create({
   actionText: {
     color: "#fff",
     fontSize: 13,
+  },
+  missingContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 28,
+    backgroundColor: "#f4eee7",
+  },
+  missingTitle: {
+    color: "#3f3129",
+    fontSize: 20,
+    fontWeight: "800",
+  },
+  missingText: {
+    marginTop: 8,
+    color: "#796a60",
+    fontSize: 14,
+    textAlign: "center",
+  },
+  backButton: {
+    marginTop: 22,
+    borderRadius: 20,
+    backgroundColor: "#4b2e1e",
+    paddingHorizontal: 24,
+    paddingVertical: 11,
+  },
+  backButtonText: {
+    color: "#fff",
+    fontWeight: "700",
   },
 });

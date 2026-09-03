@@ -34,7 +34,7 @@ const AppContext = createContext<AppContextType | null>(null);
 const EMPTY_USER: AppUser = { id: "", name: "", avatar: undefined };
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user: authUser } = useAuth();
 
   const [closetItems, setClosetItems] = useState<ClosetItem[]>([]);
   const [posts, setPosts] = useState<SocialPost[]>([]);
@@ -57,7 +57,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     fetchMyProfile().then((p) => {
       if (p) setUser({ id: p.id, name: p.name, avatar: p.avatar });
     });
-  }, [isAuthenticated]);
+  }, [isAuthenticated, authUser?.id]);
 
   // 追加は楽観的にローカル反映（実際の永続化は useItemAdd 側の API 呼び出しが担う）
   const addClosetItem: AppContextType["addClosetItem"] = (item) => {

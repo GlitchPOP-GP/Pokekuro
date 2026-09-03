@@ -9,6 +9,7 @@ export function useCloset() {
   const [items, setItems] = useState<ClosetItem[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<ClosetCategory>("shirt");
   const [selectedTags, setSelectedTags] = useState<string[]>([""]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 画面にフォーカスが戻るたびに再取得する。
   // （タブは一度マウントされると生き続けるので、他の画面でアイテムを追加した後
@@ -16,9 +17,11 @@ export function useCloset() {
   useFocusEffect(
     useCallback(() => {
       let active = true;
+      setIsLoading(true);
       fetchClosetItems().then((data) => {
         if (active) {
           setItems(data);
+          setIsLoading(false);
         }
       });
       return () => {
@@ -59,5 +62,6 @@ export function useCloset() {
     setSelectedTags,
     tags,
     filteredItems,
+    isLoading,
   };
 }

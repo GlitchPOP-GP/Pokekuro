@@ -7,7 +7,9 @@ export const homeStyles = StyleSheet.create({
   },
 
   content: {
-    flex: 1,
+    width: "100%",
+    maxWidth: 720,
+    alignSelf: "center",
     paddingTop: 20,
   },
 

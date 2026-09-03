@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 
 // React Native コンポーネント
-import { View, Text, TouchableOpacity, Image, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 // 自作コンポーネント
@@ -19,25 +19,47 @@ import googleIcon from "../../../assets/pngwing.com.png";
 
 type Props = NativeStackScreenProps<RootStackParamList, "Login">;
 
+const DEMO_EMAIL = "demo@pokekuro.app";
+const DEMO_PASSWORD = "demo1234";
+
 export default function Login({ navigation }: Props) {
-  const { bypassLogin } = useAuth();
+  const { login } = useAuth();
 
   // メールアドレス入力状態
   const [email, setEmail] = useState("");
 
   // パスワード入力状態
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   // 新規登録押下時
   const handleRegister = () => {
-    // ここで新規登録ページへ遷移
+    if (Platform.OS === "web") {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
     navigation.navigate("Register");
   };
 
-  // ログイン押下時: 認証は未実装なので、いったんそのまま次画面へ進める。
-  // bypassLogin で認証状態を立てると RootNavigator が MainTabs へ切り替わる。
-  const handleLogin = () => {
-    bypassLogin();
+  const handleLogin = async () => {
+    const isEmptyLogin = !email.trim() && !password;
+    const normalizedEmail = isEmptyLogin
+      ? DEMO_EMAIL
+      : email.trim().toLowerCase();
+    const loginPassword = isEmptyLogin ? DEMO_PASSWORD : password;
+
+    if (!normalizedEmail || !loginPassword) {
+      Alert.alert("入力エラー", "メールアドレスとパスワードを入力してください");
+      return;
+    }
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      await login(normalizedEmail, loginPassword);
+    } catch (err: any) {
+      Alert.alert("ログインできませんでした", err?.message ?? "通信状態を確認して、もう一度お試しください");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Google ログインは未実装（OAuth 基盤が必要）
@@ -47,16 +69,11 @@ export default function Login({ navigation }: Props) {
 
   return (
     <GlobalStyles>
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 20,
-        }}
-      >
-        <View style={{ width: "100%", alignItems: "center" }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={{ flexGrow: 1, justifyContent: "center", alignItems: "center", padding: 20 }}>
+        <View style={{ width: "100%", maxWidth: 420, alignItems: "center" }}>
           <Text
+            accessibilityRole="header"
             style={textStyles.h1Text({
               marginBottom: 24,
             })}
@@ -69,6 +86,9 @@ export default function Login({ navigation }: Props) {
             placeholder="メールアドレス"
             value={email}
             onChangeText={setEmail}
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
             style={{
               marginBottom: 16,
             }}
@@ -81,6 +101,10 @@ export default function Login({ navigation }: Props) {
             onChangeText={setPassword}
             // パスワード非表示
             secureTextEntry
+            autoComplete="current-password"
+            textContentType="password"
+            returnKeyType="go"
+            onSubmitEditing={handleLogin}
             style={{
               marginBottom: 16,
             }}
@@ -91,9 +115,14 @@ export default function Login({ navigation }: Props) {
             style={{
               marginBottom: 8,
             }}
-            title="ログイン"
+            title={submitting ? "ログイン中..." : "ログイン"}
             onPress={handleLogin}
+            disabled={submitting}
           />
+
+          <Text style={[textStyles.h4Text({ color: "#5f554f" }), { marginBottom: 8, textAlign: "center" }]}> 
+            未入力のまま押すとデモアカウントでログインします
+          </Text>
 
           {/* 新規登録誘導エリア */}
           <View
@@ -112,15 +141,16 @@ export default function Login({ navigation }: Props) {
             <Text style={textStyles.h4Text({})}>アカウントをお持ちでない方は</Text>
 
             {/* 新規登録ボタン */}
-            <TouchableOpacity onPress={handleRegister}>
+            <TouchableOpacity
+              onPress={handleRegister}
+              accessibilityRole="link"
+              accessibilityLabel="新規登録画面へ移動"
+            >
               {/* 赤文字 */}
               <Text
-                style={textStyles.h4Text({
-                  color: "#ff0000",
-                  marginLeft: 6,
-                })}
+                style={[textStyles.h4Text({ color: "#8a4f32" }), { marginLeft: 6, fontWeight: "700" }]}
               >
-                こちら
+                新規登録
               </Text>
             </TouchableOpacity>
           </View>
@@ -136,8 +166,9 @@ export default function Login({ navigation }: Props) {
 
           {/* Googleログインボタン */}
           <Button
-            title="Googleでログイン"
+            title="Googleログイン（準備中）"
             onPress={handleGoogle}
+            disabled
             // ボタン本体スタイル
             style={{
               marginTop: 24,
@@ -162,7 +193,8 @@ export default function Login({ navigation }: Props) {
             }
           />
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </GlobalStyles>
   );
 }

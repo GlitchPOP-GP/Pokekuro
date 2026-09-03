@@ -1,15 +1,6 @@
 import React from "react";
-
-// React Native コンポーネント
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ImageBackground,
-  Image,
-} from "react-native";
-
-import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { ScrollView, View } from "react-native";
+import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 // 自作コンポーネント
@@ -19,20 +10,14 @@ import GlobalStyles from "../components/Background";
 import AddItemCard from "../components/AddItemCard";
 
 // navigation型
-import type { RootStackParamList } from "../navigation/RootNavigator";
+import type { TabParamList } from "../navigation/tabs";
 
 // スタイル
 import { homeStyles } from "../styles/screens/home";
-import { textStyles } from "../styles/text";
-
-type Props = NativeStackScreenProps<RootStackParamList, "MainTabs">;
+type Props = BottomTabScreenProps<TabParamList, "Home">;
 
 export default function Home({ navigation }: Props) {
   const insets = useSafeAreaInsets();
-
-  const handleAddItem = () => {
-    console.log("アイテム追加処理を記載");
-  };
 
   return (
     <GlobalStyles>
@@ -44,11 +29,14 @@ export default function Home({ navigation }: Props) {
           },
         ]}
       >
-        <View style={homeStyles.content}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[homeStyles.content, { paddingBottom: insets.bottom + 96 }]}
+        >
           <TodayPickCard />
-          <AddItemCard onPress={handleAddItem} />
+          <AddItemCard onPress={() => navigation.navigate("Camera")} />
           <RecentItems />
-        </View>
+        </ScrollView>
       </View>
     </GlobalStyles>
   );

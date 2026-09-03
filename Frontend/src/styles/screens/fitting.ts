@@ -39,7 +39,8 @@ export const fittingStyles = StyleSheet.create({
   },
 
   modelContainer: {
-    width: SCREEN_WIDTH * 0.8,
+    width: "80%",
+    maxWidth: 540,
     height: "100%",
     marginTop: 20,
   },

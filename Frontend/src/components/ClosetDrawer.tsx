@@ -22,6 +22,7 @@ const COLLAPSED_Y = SCREEN_HEIGHT * (0.82 - 0.56); // 0.26 * SCREEN_HEIGHT (show
 const EXPANDED_Y = 0;                             // 0 * SCREEN_HEIGHT (showing 82%)
 
 import { ClosetItem } from "../types/closet";
+import type { ClosetCategory } from "../hooks/useCloset";
 
 // ドロワーのアニメーションと、カテゴリ・タグ・アイテム選択のロジックを実装したコンポーネント。
 export default function ClosetDrawer({
@@ -39,8 +40,8 @@ export default function ClosetDrawer({
 }: {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
-  selectedCategory: ClothingCategory;
-  setSelectedCategory: (category: ClothingCategory) => void;
+  selectedCategory: ClosetCategory;
+  setSelectedCategory: (category: ClosetCategory) => void;
   selectedTags: string[];
   setSelectedTags: (tags: string[]) => void;
   selectedItems: SelectedItems;
@@ -51,7 +52,13 @@ export default function ClosetDrawer({
 }) {
   const { translateY, panResponder } = useDrawerPan(isExpanded, setIsExpanded);
 
-  const categories = ['shirt', 'pants', 'cap', 'bookmark', 'heart'] as const;
+  const categories = ['shirt', 'pants', 'cap', 'heart'] as const;
+  const categoryLabels: Record<typeof categories[number], string> = {
+    shirt: "トップス",
+    pants: "ボトムス",
+    cap: "帽子",
+    heart: "お気に入り",
+  };
 
 
   // Helper to render category icons
@@ -82,8 +89,6 @@ export default function ClosetDrawer({
             resizeMode="contain"
           />
         );
-      case 'bookmark':
-        return <MaterialCommunityIcons name="bookmark-outline" size={size} color={color} />;
       case 'heart':
         return <MaterialCommunityIcons name="heart-outline" size={size} color={color} />;
       default:
@@ -120,6 +125,9 @@ export default function ClosetDrawer({
                 key={cat}
                 style={[styles.categoryTab, isSelected && styles.activeCategoryTab]}
                 onPress={() => setSelectedCategory(cat)}
+                accessibilityRole="tab"
+                accessibilityLabel={categoryLabels[cat]}
+                accessibilityState={{ selected: isSelected }}
               >
                 {renderCategoryIcon(cat, isSelected, 28)}
               </TouchableOpacity>
@@ -170,6 +178,7 @@ export default function ClosetDrawer({
                 style={[styles.itemCard, isSelected && styles.selectedItemCard]}
                 activeOpacity={0.8}
                 onPress={() => toggleItemSelection(item)}
+                accessibilityLabel={`${item.name || categoryLabels[item.itemType]}を${isSelected ? "外す" : "着用する"}`}
               >
                 <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
                 {isSelected && (
@@ -180,6 +189,14 @@ export default function ClosetDrawer({
               </TouchableOpacity>
             );
           }}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <MaterialCommunityIcons name="hanger" size={34} color="#9b8a7d" />
+              <Text style={styles.emptyText}>
+                {selectedTags.some(Boolean) ? "選択したタグのアイテムはありません" : `${categoryLabels[selectedCategory as keyof typeof categoryLabels] ?? "アイテム"}はまだありません`}
+              </Text>
+            </View>
+          }
         />
       </ImageBackground>
     </Animated.View>
@@ -276,6 +293,18 @@ const styles = StyleSheet.create({
   gridContent: {
     paddingHorizontal: 12,
     paddingBottom: 10,
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 32,
+    paddingHorizontal: 24,
+  },
+  emptyText: {
+    marginTop: 10,
+    color: '#75675d',
+    fontSize: 13,
+    textAlign: 'center',
   },
   itemCard: {
     flex: 1 / 3,

@@ -1,8 +1,4 @@
-import { StyleSheet, Dimensions } from "react-native";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
-
-const GRID_ITEM_SIZE = (SCREEN_WIDTH - 3) / 3;
+import { StyleSheet } from "react-native";
 
 export const profileStyles = StyleSheet.create({
   container: {
@@ -11,6 +7,9 @@ export const profileStyles = StyleSheet.create({
 
   overlay: {
     flex: 1,
+    width: "100%",
+    maxWidth: 900,
+    alignSelf: "center",
     backgroundColor: "rgba(255,255,255,0.15)",
   },
 
@@ -91,9 +90,9 @@ export const profileStyles = StyleSheet.create({
   // },
 
   gridItem: {
-    width: GRID_ITEM_SIZE,
-    height: GRID_ITEM_SIZE,
-    margin: 0.5,
+    flex: 1 / 3,
+    aspectRatio: 1,
+    margin: 1,
     backgroundColor: "#e8e0d8",
     overflow: "hidden",
   },
@@ -101,6 +100,9 @@ export const profileStyles = StyleSheet.create({
   gridItemImage: {
     width: "100%",
     height: "100%",
+  },
+  postsGrid: {
+    paddingBottom: 96,
   },
 
   tabRow: {

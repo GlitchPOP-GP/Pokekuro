@@ -191,13 +191,11 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
 
   // 確定処理
   const handleConfirm = async () => {
+    if (submitting || fittingStatus === "pending" || fittingStatus === "processing") return;
     const itemType = CATEGORY_LABEL_TO_VALUE[selectedCategory] ?? "shirt";
 
     // ドメイン関数を使って保存用のエンティティデータを作成
     const newClosetItem = createClosetItemEntity(previewImage, tags, shopName, itemType);
-    // ローカル state に即時反映（UI をすぐ更新する）
-    addClosetItem(newClosetItem);
-
     // 画像が URL/URI 文字列で表現できる場合のみバックエンドへ永続化する
     // （require() のモック画像には URL が無いため送らない）。
     const localUri =
@@ -221,11 +219,17 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
         });
         createdItemId = createdItem.id;
       } catch (err) {
-        // 永続化に失敗してもローカル追加は済んでいるので UI は継続する
         console.warn("クローゼット登録の永続化に失敗しました", err);
+        Alert.alert(
+          "アイテムを保存できませんでした",
+          err instanceof Error ? err.message : "通信状態を確認して、もう一度お試しください"
+        );
+        return;
       } finally {
         setSubmitting(false);
       }
+
+      addClosetItem(newClosetItem);
 
       if (createdItemId) {
         try {
@@ -241,6 +245,8 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
         }
       }
     }
+
+    if (!localUri) addClosetItem(newClosetItem);
 
     // 3D生成を開始できなかった場合はそのまま次画面へ
     onConfirmSuccess();

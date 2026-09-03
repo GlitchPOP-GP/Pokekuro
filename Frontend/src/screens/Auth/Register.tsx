@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 
 // React Native コンポーネント
-import { View, Text, TouchableOpacity, Image, Alert } from "react-native";
+import { View, Text, TouchableOpacity, Image, Alert, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
+import { useFocusEffect } from "@react-navigation/native";
 
 // 自作コンポーネント
 import TextBox from "../../components/TextBox";
@@ -32,9 +33,23 @@ export default function Register({ navigation }: Props) {
   const [password, setPassword] = useState("");
   const [check_password, setCheck_Password] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const scrollRef = useRef<ScrollView>(null);
+
+  useFocusEffect(
+    useCallback(() => {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+        if (Platform.OS === "web") window.scrollTo(0, 0);
+      }, 150);
+      return () => clearTimeout(timer);
+    }, [])
+  );
 
   // ログインへ戻る
   const handleRegister = () => {
+    if (Platform.OS === "web") {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
     navigation.navigate("Login");
   };
 
@@ -42,7 +57,9 @@ export default function Register({ navigation }: Props) {
   // RootNavigator が自動的に MainTabs へ切り替わる。
   const handleLogin = async () => {
     if (submitting) return;
-    if (!userName || !email || !password) {
+    const normalizedName = userName.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedName || !normalizedEmail || !password) {
       Alert.alert("入力エラー", "ユーザー名・メールアドレス・パスワードを入力してください");
       return;
     }
@@ -50,9 +67,13 @@ export default function Register({ navigation }: Props) {
       Alert.alert("入力エラー", "パスワードが一致しません");
       return;
     }
+    if (password.length < 8) {
+      Alert.alert("入力エラー", "パスワードは8文字以上にしてください");
+      return;
+    }
     setSubmitting(true);
     try {
-      await register(email, password, userName);
+      await register(normalizedEmail, password, normalizedName);
     } catch (err: any) {
       Alert.alert("登録失敗", err?.message ?? "登録できませんでした");
     } finally {
@@ -67,16 +88,15 @@ export default function Register({ navigation }: Props) {
 
   return (
     <GlobalStyles>
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "center",
-          alignItems: "center",
-          paddingHorizontal: 20,
-        }}
-      >
-        <View style={{ width: "100%", alignItems: "center" }}>
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
+        <ScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          contentContainerStyle={{ flexGrow: 1, alignItems: "center", paddingHorizontal: 20, paddingVertical: 48 }}
+        >
+        <View style={{ width: "100%", maxWidth: 420, alignItems: "center" }}>
           <Text
+            accessibilityRole="header"
             style={textStyles.h1Text({
               marginBottom: 24,
             })}
@@ -88,6 +108,8 @@ export default function Register({ navigation }: Props) {
             placeholder="ユーザー名"
             value={userName}
             onChangeText={setUserName}
+            autoCapitalize="words"
+            autoComplete="name"
             style={{
               marginBottom: 16,
             }}
@@ -97,6 +119,9 @@ export default function Register({ navigation }: Props) {
             placeholder="メールアドレス"
             value={email}
             onChangeText={setEmail}
+            keyboardType="email-address"
+            autoComplete="email"
+            textContentType="emailAddress"
             style={{
               marginBottom: 16,
             }}
@@ -107,16 +132,20 @@ export default function Register({ navigation }: Props) {
             value={password}
             onChangeText={setPassword}
             secureTextEntry
+            autoComplete="new-password"
+            textContentType="newPassword"
             style={{
               marginBottom: 16,
             }}
           />
 
           <TextBox
-            placeholder="パスワード確認用(再入力)"
+            placeholder="パスワード（確認）"
             value={check_password}
             onChangeText={setCheck_Password}
             secureTextEntry
+            returnKeyType="done"
+            onSubmitEditing={handleLogin}
             style={{
               marginBottom: 16,
             }}
@@ -128,6 +157,7 @@ export default function Register({ navigation }: Props) {
             }}
             title={submitting ? "作成中..." : "新規作成"}
             onPress={handleLogin}
+            disabled={submitting}
           />
 
           <View
@@ -139,14 +169,15 @@ export default function Register({ navigation }: Props) {
               marginTop: 8,
             }}
           >
-            <Text style={textStyles.h4Text({})}>アカウントをお持ちの方</Text>
+            <Text style={textStyles.h4Text({})}>すでにアカウントをお持ちの方は</Text>
 
-            <TouchableOpacity onPress={handleRegister}>
+            <TouchableOpacity
+              onPress={handleRegister}
+              accessibilityRole="link"
+              accessibilityLabel="ログイン画面へ戻る"
+            >
               <Text
-                style={textStyles.h4Text({
-                  color: "#ff0000",
-                  marginLeft: 6,
-                })}
+                style={[textStyles.h4Text({ color: "#8a4f32" }), { marginLeft: 6, fontWeight: "700" }]}
               >
                 ログイン
               </Text>
@@ -162,8 +193,9 @@ export default function Register({ navigation }: Props) {
           />
 
           <Button
-            title="Googleで新規登録"
+            title="Google新規登録（準備中）"
             onPress={handleGoogle}
+            disabled
             style={{
               marginTop: 24,
               backgroundColor: "#fff",
@@ -185,7 +217,8 @@ export default function Register({ navigation }: Props) {
             }
           />
         </View>
-      </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
     </GlobalStyles>
   );
 }

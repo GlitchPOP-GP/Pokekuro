@@ -6,28 +6,23 @@ import {
   TouchableOpacity,
   NativeSyntheticEvent,
   NativeScrollEvent,
-  Dimensions,
+  useWindowDimensions,
 } from "react-native";
 
 import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-
-import type { RootStackParamList } from "../navigation/RootNavigator";
+import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import type { TabParamList } from "../navigation/tabs";
 
 import TodayPickItem from "./TodayPickItem";
 import { fetchTodayPicks, TodayPick } from "../api/todayPick";
 import { todayPickStyles } from "../styles/components/todayPick";
 
-type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
-
-const { width } = Dimensions.get("window");
-
-export const SCREEN_WIDTH = Dimensions.get("window").width;
-export const CARD_WIDTH = SCREEN_WIDTH - 10;
 export const CARD_HEIGHT = 240;
 const AUTO_SCROLL_TIME = 5000;
 export default function TodayPickCard() {
-  const navigation = useNavigation<NavigationProp>();
+  const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
+  const { width } = useWindowDimensions();
+  const cardWidth = Math.min(Math.max(width - 30, 280), 680);
 
   const flatListRef = useRef<FlatList>(null);
 
@@ -78,7 +73,7 @@ export default function TodayPickCard() {
   const onMomentumScrollEnd = (
     event: NativeSyntheticEvent<NativeScrollEvent>,
   ) => {
-    const index = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
+    const index = Math.round(event.nativeEvent.contentOffset.x / cardWidth);
 
     setCurrentIndex(index);
     startAutoScroll();
@@ -86,7 +81,7 @@ export default function TodayPickCard() {
 
   return (
     <View style={todayPickStyles.wrapper}>
-      <View style={todayPickStyles.cardFrame}>
+      <View style={[todayPickStyles.cardFrame, { width: cardWidth }]}>
         <View style={todayPickStyles.container}>
           {/* 動画 */}
           <FlatList
@@ -94,7 +89,7 @@ export default function TodayPickCard() {
             horizontal
             bounces={false}
             showsHorizontalScrollIndicator={false}
-            snapToInterval={SCREEN_WIDTH}
+            snapToInterval={cardWidth}
             snapToAlignment="center"
             decelerationRate="fast"
             data={todayPickData}
@@ -102,6 +97,7 @@ export default function TodayPickCard() {
             onMomentumScrollEnd={onMomentumScrollEnd}
             style={{
               flex: 1,
+              width: cardWidth,
             }}
             contentContainerStyle={{
               justifyContent: "center",
@@ -109,7 +105,7 @@ export default function TodayPickCard() {
             renderItem={({ item, index }) => (
               <View
                 style={{
-                  width: SCREEN_WIDTH,
+                  width: cardWidth,
                   alignItems: "center",
                 }}
               >
@@ -122,6 +118,13 @@ export default function TodayPickCard() {
             )}
           />
 
+          {todayPickData.length === 0 && (
+            <View style={todayPickStyles.emptyState}>
+              <Text style={todayPickStyles.emptyTitle}>TODAY'S PICK</Text>
+              <Text style={todayPickStyles.emptyText}>おすすめコーデを準備しています</Text>
+            </View>
+          )}
+
           {/* ===== 動画の上に固定 ===== */}
           <TouchableOpacity
             activeOpacity={0.8}
@@ -130,7 +133,7 @@ export default function TodayPickCard() {
           >
             <Text style={todayPickStyles.title}>TODAY'S PICK</Text>
 
-            <Text style={todayPickStyles.arrow}>›</Text>
+            {todayPickData.length > 0 && <Text style={todayPickStyles.arrow}>›</Text>}
           </TouchableOpacity>
 
           {/* ===== インジケーター ===== */}

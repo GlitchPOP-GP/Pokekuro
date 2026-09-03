@@ -1,3 +1,11 @@
+export type TabParamList = {
+  Home: undefined;
+  Fitting: { selectedItem?: string } | undefined;
+  Camera: undefined;
+  Shop: undefined;
+  Profile: undefined;
+};
+
 export const TABS = [
   {
     name: "Home",

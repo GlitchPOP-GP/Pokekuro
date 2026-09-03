@@ -1,6 +1,4 @@
-import { StyleSheet, Dimensions } from "react-native";
-
-const { width: SCREEN_WIDTH } = Dimensions.get("window");
+import { StyleSheet } from "react-native";
 
 export const itemAddStyles = StyleSheet.create({
   container: {
@@ -12,6 +10,9 @@ export const itemAddStyles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   scrollContent: {
+    width: "100%",
+    maxWidth: 640,
+    alignSelf: "center",
     paddingTop: 16,
     paddingBottom: 110, // Avoid bottom tab bar overlapping
     alignItems: "center",
@@ -44,10 +45,11 @@ export const itemAddStyles = StyleSheet.create({
     marginTop: 8,
   },
   confirmButton: {
-    width: "60%", // Make button layout match the reference screenshot (centered, medium width)
-    backgroundColor: "#000000",
-    borderRadius: 10,
-    paddingVertical: 12,
+    width: "100%",
+    maxWidth: 360,
+    backgroundColor: "#4b2e1e",
+    borderRadius: 14,
+    paddingVertical: 15,
     alignItems: "center",
     justifyContent: "center",
     marginTop: 16,

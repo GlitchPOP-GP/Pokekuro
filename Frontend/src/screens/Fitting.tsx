@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View } from "react-native";
+import { ActivityIndicator, Text, View } from "react-native";
 import { useRoute } from "@react-navigation/native";
 
 import ClosetDrawer from "../components/ClosetDrawer";
@@ -21,6 +21,7 @@ export default function FittingScreen() {
     setSelectedTags,
     tags,
     filteredItems,
+    isLoading,
   } = useCloset();
 
   const {
@@ -74,6 +75,12 @@ export default function FittingScreen() {
         isItemSelected={isItemSelected}
         filteredItems={filteredItems}
       />
+      {isLoading && (
+        <View pointerEvents="none" style={{ position: "absolute", top: 16, alignSelf: "center", flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.88)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18 }}>
+          <ActivityIndicator size="small" color="#4b2e1e" />
+          <Text style={{ marginLeft: 8, color: "#4b3b32", fontSize: 12 }}>クローゼットを読み込み中</Text>
+        </View>
+      )}
     </View>
   );
 }

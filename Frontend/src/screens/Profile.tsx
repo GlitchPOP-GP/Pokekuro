@@ -5,6 +5,7 @@ import {
   Image,
   TouchableOpacity,
   FlatList,
+  Alert,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,9 +13,13 @@ import GlobalStyles from "../components/Background";
 import ProfileHeader from "../components/ProfileHeader";
 import { useProfile } from "../hooks/useProfile";
 import { profileStyles } from "../styles/screens/profile";
+import { useNavigation } from "@react-navigation/native";
+import { useAuth } from "../store/AuthContext";
 
 export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
+  const navigation = useNavigation<any>();
+  const { logout } = useAuth();
 
   const {
     user,
@@ -26,7 +31,10 @@ export default function ProfileScreen() {
   } = useProfile();
 
   const handleSettingsPress = () => {
-    console.log("設定画面へ遷移");
+    Alert.alert("アカウント", "アカウント操作を選択してください", [
+      { text: "キャンセル", style: "cancel" },
+      { text: "ログアウト", style: "destructive", onPress: logout },
+    ]);
   };
 
   return (
@@ -51,6 +59,8 @@ export default function ProfileScreen() {
             <TouchableOpacity
               style={profileStyles.gridItem}
               activeOpacity={0.85}
+              onPress={() => navigation.navigate("PostDetail", { postId: item.id })}
+              accessibilityLabel={`${item.user || "ユーザー"}の投稿を開く`}
             >
               <Image
                 source={item.image}

@@ -8,8 +8,10 @@
 // Web版ビルド（Dockerfile.web）では "/" が入る。末尾スラッシュが落ちて "" になり、
 // 相対パス＝同一オリジンとして nginx 経由で api に届くため LAN IP に依存しない。
 
-const BASE_URL =
-  process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, "") || "http://localhost:8001";
+const configuredBaseUrl = process.env.EXPO_PUBLIC_API_URL;
+const BASE_URL = configuredBaseUrl === undefined
+  ? "http://localhost:8001"
+  : configuredBaseUrl.replace(/\/$/, "");
 
 // JWT はメモリ上に保持する（アプリ再起動で消える）。
 // 永続化したい場合は expo-secure-store / AsyncStorage に置き換える。
@@ -61,16 +63,35 @@ export async function api<T = any>(path: string, options: Options = {}): Promise
     headers["Authorization"] = `Bearer ${authToken}`;
   }
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20_000);
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (err: any) {
+    if (err?.name === "AbortError") throw new ApiError(408, "通信がタイムアウトしました");
+    throw new ApiError(0, "サーバーに接続できませんでした");
+  } finally {
+    clearTimeout(timeout);
+  }
 
   if (res.status === 204) return undefined as T;
 
   const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
+  let data: any = null;
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      if (!res.ok) throw new ApiError(res.status, `リクエストに失敗しました (${res.status})`);
+      throw new ApiError(res.status, "サーバーから不正な応答が返されました");
+    }
+  }
 
   if (!res.ok) {
     const message = data?.error || `リクエストに失敗しました (${res.status})`;
