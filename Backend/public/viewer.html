@@ -95,6 +95,7 @@ const controls = new OrbitControls(
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enablePan = false;
+controls.zoomSpeed = 1.15;
 controls.minDistance = 0.5;
 controls.maxDistance = 10;
 
@@ -120,18 +121,38 @@ const clothPaths = params.getAll("cloth");
 
 const loadingEl = document.getElementById("loading");
 const loadedModels = [];
+let modelSphere = null;
+
+function fitCameraToModel(resetPosition = true) {
+    if (!modelSphere) return;
+    const radius = modelSphere.radius || 1;
+    const verticalHalfFov = THREE.MathUtils.degToRad(camera.fov * 0.5);
+    const horizontalHalfFov = Math.atan(Math.tan(verticalHalfFov) * camera.aspect);
+    const limitingHalfFov = Math.min(verticalHalfFov, horizontalHalfFov);
+    // どの向きに回転しても全身（腕を含む）が画面内に残る距離。
+    const fitDistance = radius / Math.sin(limitingHalfFov);
+    // 初期表示には十分な余白を持たせ、そこから全身が収まる限界まで
+    // ピンチ操作で明確にズームできる幅を確保する。
+    const initialDistance = fitDistance * 1.6;
+
+    if (resetPosition) {
+        camera.position.set(modelSphere.center.x, modelSphere.center.y, modelSphere.center.z + initialDistance);
+    } else if (camera.position.distanceTo(modelSphere.center) < fitDistance) {
+        camera.position.sub(modelSphere.center).setLength(fitDistance).add(modelSphere.center);
+    }
+    camera.lookAt(modelSphere.center);
+    controls.target.copy(modelSphere.center);
+    // 腕や全身が画面外に出ても、服の細部まで寄って確認できるようにする。
+    controls.minDistance = fitDistance * 0.28;
+    controls.maxDistance = fitDistance * 5;
+    controls.update();
+}
 
 function finish() {
     const box = new THREE.Box3();
     loadedModels.forEach((m) => box.expandByObject(m));
-    const size = box.getSize(new THREE.Vector3());
-    const maxDim = Math.max(size.x, size.y, size.z) || 1;
-    const distance = maxDim * 1.6;
-
-    camera.position.set(0, maxDim * 0.15, distance);
-    camera.lookAt(0, 0, 0);
-    controls.target.set(0, 0, 0);
-    controls.update();
+    modelSphere = box.getBoundingSphere(new THREE.Sphere());
+    fitCameraToModel();
 
     loadingEl.classList.add("hidden");
     if (window.ReactNativeWebView) {
@@ -195,6 +216,7 @@ window.addEventListener("resize", () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
+    fitCameraToModel(false);
 });
 
 // タップ（ドラッグを伴わない短い接触）を RN 側に伝える

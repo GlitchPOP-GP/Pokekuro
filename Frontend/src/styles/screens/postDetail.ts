@@ -101,9 +101,44 @@ export const postDetailStyles = StyleSheet.create({
   },
 
   caption: {
+    flex: 1,
     fontSize: 14,
     color: "rgba(255,255,255,0.88)",
     lineHeight: 20,
+  },
+
+  captionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+  },
+
+  keepButton: {
+    minHeight: 40,
+    paddingHorizontal: 14,
+    borderRadius: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(75,46,30,0.94)",
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.72)",
+  },
+
+  keptButton: {
+    backgroundColor: "#F8F3EC",
+    borderColor: "#F8F3EC",
+  },
+
+  keepButtonText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+  },
+
+  keptButtonText: {
+    color: "#4B2E1E",
   },
 
   actionsRow: {

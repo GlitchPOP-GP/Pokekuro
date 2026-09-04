@@ -22,6 +22,7 @@ export const captureCardStyles = StyleSheet.create({
   centerArea: {
     justifyContent: "center",
     alignItems: "center",
+    paddingHorizontal: 24,
   },
 
   hangerBox: {
@@ -33,6 +34,39 @@ export const captureCardStyles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: "rgba(255, 255, 255, 0.4)",
+  },
+
+  title: {
+    marginTop: 18,
+    color: "#4B2E1E",
+    fontSize: 20,
+    fontWeight: "700",
+  },
+
+  description: {
+    marginTop: 7,
+    color: "#75665D",
+    fontSize: 13,
+    lineHeight: 19,
+    textAlign: "center",
+  },
+
+  captureButton: {
+    minHeight: 44,
+    marginTop: 18,
+    paddingHorizontal: 20,
+    borderRadius: 22,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: "#4B2E1E",
+  },
+
+  captureButtonText: {
+    color: "#fff",
+    fontSize: 15,
+    fontWeight: "700",
   },
 
   // L-shaped corner guides

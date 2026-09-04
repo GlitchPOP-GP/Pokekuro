@@ -10,6 +10,7 @@ import {
   FlatList,
   Animated,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { MaterialIcons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useDrawerPan } from '../hooks/useDrawerPan';
@@ -37,6 +38,7 @@ export default function ClosetDrawer({
   isItemSelected,
   filteredItems,
   tags,
+  onDeleteItem,
 }: {
   isExpanded: boolean;
   setIsExpanded: (expanded: boolean) => void;
@@ -49,21 +51,23 @@ export default function ClosetDrawer({
   isItemSelected: (item: ClosetItem) => boolean;
   filteredItems: ClosetItem[];
   tags: string[];
+  onDeleteItem: (item: ClosetItem) => void;
 }) {
   const { translateY, panResponder } = useDrawerPan(isExpanded, setIsExpanded);
 
-  const categories = ['shirt', 'pants', 'cap', 'heart'] as const;
+  const categories = ['shirt', 'pants', 'cap', 'bookmark', 'heart'] as const;
   const categoryLabels: Record<typeof categories[number], string> = {
     shirt: "トップス",
     pants: "ボトムス",
     cap: "帽子",
+    bookmark: "キープ",
     heart: "お気に入り",
   };
 
 
   // Helper to render category icons
   const renderCategoryIcon = (id: typeof categories[number], isSelected: boolean, size: number) => {
-    const color = isSelected ? '#555555' : '#8e8e93';
+    const color = isSelected ? '#4B2E1E' : '#8D7C70';
     switch (id) {
       case 'shirt':
         return (
@@ -91,6 +95,8 @@ export default function ClosetDrawer({
         );
       case 'heart':
         return <MaterialCommunityIcons name="heart-outline" size={size} color={color} />;
+      case 'bookmark':
+        return <MaterialCommunityIcons name="bookmark-outline" size={size} color={color} />;
       default:
         return null;
     }
@@ -172,15 +178,38 @@ export default function ClosetDrawer({
           showsVerticalScrollIndicator={false}
           renderItem={({ item }) => {
             const isSelected = isItemSelected(item);
+            const isGenerating = item.fittingStatus === "pending" || item.fittingStatus === "processing";
+            const isAwaitingApproval = item.fittingStatus === "awaiting_approval";
+            const isUnavailable = isGenerating || isAwaitingApproval;
             
             return (
               <TouchableOpacity
                 style={[styles.itemCard, isSelected && styles.selectedItemCard]}
                 activeOpacity={0.8}
-                onPress={() => toggleItemSelection(item)}
+                onPress={() => {
+                  if (!isUnavailable) toggleItemSelection(item);
+                }}
+                onLongPress={() => onDeleteItem(item)}
+                delayLongPress={500}
                 accessibilityLabel={`${item.name || categoryLabels[item.itemType]}を${isSelected ? "外す" : "着用する"}`}
+                accessibilityHint="長押しで削除"
+                accessibilityState={{ disabled: isUnavailable }}
               >
-                <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
+                {isGenerating && !item.hasGeneratedPreview ? (
+                  <View style={styles.generatingPlaceholder}>
+                    <MaterialCommunityIcons name="hanger" size={32} color="#8D7C70" />
+                  </View>
+                ) : (
+                  <Image source={item.image} style={styles.itemImage} resizeMode="cover" />
+                )}
+                {isUnavailable && (
+                  <View style={styles.generationBadge}>
+                    {isGenerating && <ActivityIndicator size="small" color="#4B2E1E" />}
+                    <Text style={styles.generationText}>
+                      生成中
+                    </Text>
+                  </View>
+                )}
                 {isSelected && (
                   <View style={styles.checkBadge}>
                     <MaterialIcons name="check" size={14} color="#ffffff" />
@@ -252,12 +281,14 @@ const styles = StyleSheet.create({
   },
   categoryTab: {
     paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     alignItems: 'center',
+    borderRadius: 14,
   },
   activeCategoryTab: {
+    backgroundColor: 'rgba(248, 243, 236, 0.9)',
     borderBottomWidth: 2,
-    borderBottomColor: '#555555',
+    borderBottomColor: '#4B2E1E',
   },
   tagsContainer: {
     paddingVertical: 10,
@@ -280,7 +311,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   activeTagPill: {
-    backgroundColor: '#1a1a1a',
+    backgroundColor: '#4B2E1E',
   },
   tagText: {
     fontSize: 13,
@@ -324,18 +355,46 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   selectedItemCard: {
-    borderColor: '#007AFF', // Clean iOS blue selection border
+    borderColor: '#4B2E1E',
   },
   itemImage: {
     width: '100%',
     height: '100%',
     borderRadius: 8,
   },
+  generatingPlaceholder: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8F3EC',
+  },
+  generationBadge: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    bottom: 8,
+    minHeight: 34,
+    borderRadius: 17,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    backgroundColor: 'rgba(248, 243, 236, 0.94)',
+    borderWidth: 1,
+    borderColor: 'rgba(75, 46, 30, 0.16)',
+  },
+  generationText: {
+    color: '#4B2E1E',
+    fontSize: 12,
+    fontWeight: '700',
+  },
   checkBadge: {
     position: 'absolute',
     top: 6,
     right: 6,
-    backgroundColor: '#007AFF',
+    backgroundColor: '#4B2E1E',
     width: 20,
     height: 20,
     borderRadius: 10,

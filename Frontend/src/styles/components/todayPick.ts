@@ -57,11 +57,11 @@ export const todayPickStyles = StyleSheet.create({
   },
 
   video: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
   },
 
   thumbnailContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 5,
   },
 
@@ -72,7 +72,7 @@ export const todayPickStyles = StyleSheet.create({
   },
 
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 6,
   },
 
@@ -198,7 +198,7 @@ export const todayPickStyles = StyleSheet.create({
     backgroundColor: "#FFF",
   },
   emptyState: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#8d7768",

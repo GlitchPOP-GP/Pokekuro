@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { Alert } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import * as Location from "expo-location";
 import { useAppContext } from "../store/AppContent";
 import { getCameraSimulationImages } from "../api/camera";
-import { createClosetItem } from "../api/closet";
+import { createClosetItem, deleteClosetItem } from "../api/closet";
 import { createLocation } from "../api/locations";
 import { uploadImage } from "../api/uploads";
 import {
@@ -28,7 +28,7 @@ interface UseItemAddOptions {
 }
 
 export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
-  const { addClosetItem } = useAppContext();
+  const { addClosetItem, refreshCloset } = useAppContext();
   const route = useRoute<any>();
 
   const imageIndex = route.params?.imageIndex ?? 0;
@@ -58,12 +58,7 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
   // "gemini": 承認待ちのプレビュー画像を生成中 / "meshy": 承認後の3Dモデル生成中
   const [fittingPhase, setFittingPhase] = useState<"gemini" | "meshy">("gemini");
   const pollingRef = useRef(false);
-
-  useEffect(() => {
-    return () => {
-      pollingRef.current = false;
-    };
-  }, []);
+  const skippedRef = useRef(false);
 
   // 季節を選択したとき
   const handleSelectSeason = (season: string) => {
@@ -141,14 +136,19 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
           // Gemini生成画像をユーザーに確認してもらうため、ここでポーリングを止める。
           // 続き（Meshy→Blender）は handleApproveGeminiImage が承認後に再開する。
           pollingRef.current = false;
+          refreshCloset();
           setPendingApprovalJob(job);
           return;
         }
         if (job.status === "done") {
-          onConfirmSuccess();
+          pollingRef.current = false;
+          refreshCloset();
+          if (!skippedRef.current) onConfirmSuccess();
           return;
         }
         if (job.status === "failed") {
+          pollingRef.current = false;
+          refreshCloset();
           setFittingError(job.error_message ?? "3D生成に失敗しました");
           return;
         }
@@ -157,6 +157,7 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
       }
 
       if (Date.now() - startedAt > TIMEOUT_MS) {
+        pollingRef.current = false;
         setFittingStatus("failed");
         setFittingError("タイムアウトしました");
         return;
@@ -166,9 +167,26 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
   };
 
   // 3D生成の完了を待たずに次画面へ進む
-  const handleSkipFitting = () => {
-    pollingRef.current = false;
-    setPendingApprovalJob(null);
+  const handleSkipFitting = async () => {
+    if (skippedRef.current) return;
+    skippedRef.current = true;
+
+    // 承認待ちで離れる場合も、サーバー側の後続処理を開始してから画面を閉じる。
+    if (pendingApprovalJob) {
+      try {
+        const job = await approveFittingJob(pendingApprovalJob.id);
+        setPendingApprovalJob(null);
+        setFittingPhase("meshy");
+        setFittingStatus(job.status);
+        void pollFittingJob(job.id);
+      } catch (err: any) {
+        skippedRef.current = false;
+        Alert.alert("処理を続行できませんでした", err?.message ?? String(err));
+        return;
+      }
+    }
+
+    // ポーリングはバックグラウンドで継続し、完了時にクローゼットを再取得する。
     onConfirmSuccess();
   };
 
@@ -229,8 +247,6 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
         setSubmitting(false);
       }
 
-      addClosetItem(newClosetItem);
-
       if (createdItemId) {
         try {
           // 服単体の3Dフィッティング（Gemini→Meshy→Blender）を非同期で開始する。
@@ -238,10 +254,20 @@ export function useItemAdd({ onConfirmSuccess }: UseItemAddOptions) {
           const job = await createFittingJob(createdItemId, itemType);
           setFittingPhase("gemini");
           setFittingStatus(job.status);
-          pollFittingJob(job.id);
+          refreshCloset();
+          void pollFittingJob(job.id);
           return;
         } catch (err) {
           console.warn("フィッティングジョブの開始に失敗しました", err);
+          try {
+            await deleteClosetItem(createdItemId);
+          } catch (deleteError) {
+            console.warn("生成開始に失敗したアイテムの削除に失敗しました", deleteError);
+          }
+          refreshCloset();
+          Alert.alert("3D生成を開始できませんでした", "アイテムはFittingには追加されませんでした");
+          onConfirmSuccess();
+          return;
         }
       }
     }

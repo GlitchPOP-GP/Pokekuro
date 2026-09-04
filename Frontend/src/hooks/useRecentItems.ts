@@ -1,21 +1,19 @@
-import { useState, useEffect } from "react";
-import { ClosetItem } from "../types/closet";
-import { fetchRecentClosetItems } from "../api/closet";
+import { useMemo } from "react";
+import { useAppContext } from "../store/AppContent";
 
 export function useRecentItems() {
-  const [recentItems, setRecentItems] = useState<ClosetItem[]>([]);
-
-  useEffect(() => {
-    let active = true;
-    fetchRecentClosetItems().then((items) => {
-      if (active) {
-        setRecentItems(items);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { closetItems } = useAppContext();
+  const recentItems = useMemo(
+    () =>
+      closetItems
+        .filter(
+          (item) =>
+            item.fittingStatus !== "failed" &&
+            !item.originalItemId
+        )
+        .slice(0, 6),
+    [closetItems]
+  );
 
   return { recentItems };
 }

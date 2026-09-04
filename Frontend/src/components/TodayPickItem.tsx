@@ -63,7 +63,7 @@ export default function TodayPickItem({ item, isActive, onPress }: Props) {
         player={player}
         style={todayPickStyles.video}
         nativeControls={false}
-        allowsFullscreen={false}
+        fullscreenOptions={{ enable: false }}
         allowsPictureInPicture={false}
         contentFit="cover"
       />

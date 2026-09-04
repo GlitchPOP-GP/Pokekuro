@@ -1,17 +1,21 @@
 import React, { useState } from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { ActivityIndicator, Alert, Text, View } from "react-native";
 import { useRoute } from "@react-navigation/native";
 
 import ClosetDrawer from "../components/ClosetDrawer";
 import ModelViewer from "../components/ModelViewer";
 import { useClosetSelection } from "../hooks/useClosetSelection";
 import { useCloset } from "../hooks/useCloset";
+import { deleteClosetItem } from "../api/closet";
+import { useAppContext } from "../store/AppContent";
+import type { ClosetItem } from "../types/closet";
 
 import { fittingStyles } from "../styles/screens/fitting";
 
 export default function FittingScreen() {
   const route = useRoute<any>();
   const [isExpanded, setIsExpanded] = useState(false);
+  const { refreshCloset, removeClosetItem } = useAppContext();
 
   const {
     items,
@@ -31,6 +35,32 @@ export default function FittingScreen() {
   } = useClosetSelection(items, route.params?.selectedItem, (category) => {
     setSelectedCategory(category);
   });
+
+  const confirmDeleteItem = (item: ClosetItem) => {
+    Alert.alert(
+      "アイテムを削除しますか？",
+      item.name ? `「${item.name}」をクローゼットから削除します。` : "このアイテムをクローゼットから削除します。",
+      [
+        { text: "キャンセル", style: "cancel" },
+        {
+          text: "削除",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const effectiveId = item.originalItemId ?? item.id;
+              if (!effectiveId.startsWith("post:")) {
+                await deleteClosetItem(effectiveId);
+              }
+              removeClosetItem(item);
+              refreshCloset();
+            } catch {
+              Alert.alert("削除できませんでした", "通信状態を確認して、もう一度お試しください。");
+            }
+          },
+        },
+      ]
+    );
+  };
 
 
   return (
@@ -74,6 +104,7 @@ export default function FittingScreen() {
         toggleItemSelection={toggleItemSelection}
         isItemSelected={isItemSelected}
         filteredItems={filteredItems}
+        onDeleteItem={confirmDeleteItem}
       />
       {isLoading && (
         <View pointerEvents="none" style={{ position: "absolute", top: 16, alignSelf: "center", flexDirection: "row", alignItems: "center", backgroundColor: "rgba(255,255,255,0.88)", paddingHorizontal: 14, paddingVertical: 8, borderRadius: 18 }}>

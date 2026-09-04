@@ -120,7 +120,6 @@ export default function TodayPickCard() {
 
           {todayPickData.length === 0 && (
             <View style={todayPickStyles.emptyState}>
-              <Text style={todayPickStyles.emptyTitle}>TODAY'S PICK</Text>
               <Text style={todayPickStyles.emptyText}>おすすめコーデを準備しています</Text>
             </View>
           )}

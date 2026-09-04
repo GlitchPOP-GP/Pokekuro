@@ -12,6 +12,8 @@ interface ApiClothingItem {
   name?: string | null;
   tags?: string[];
   glb_url?: string | null;
+  fitting_status?: ClosetItem["fittingStatus"];
+  gemini_image_path?: string | null;
 }
 
 // 仕様書のカテゴリ（日本語）と、フロントのタブキー（英語）の対応
@@ -36,11 +38,13 @@ function toClosetItem(
   return {
     id: String(row.id),
     name: row.name ?? "",
-    image: { uri: resolveMediaUrl(row.image) },
+    image: { uri: resolveMediaUrl(row.gemini_image_path || row.image) },
     category: categoryOverride ?? key,
     tags: row.tags ?? [],
     itemType: key,
     glbUrl: row.glb_url ? resolveMediaUrl(row.glb_url) : null,
+    fittingStatus: row.fitting_status ?? null,
+    hasGeneratedPreview: Boolean(row.gemini_image_path),
   };
 }
 
@@ -125,4 +129,8 @@ export async function favoriteItem(id: string): Promise<void> {
 
 export async function unfavoriteItem(id: string): Promise<void> {
   await api(`/api/clothing-items/${id}/favorite`, { method: "DELETE", auth: true });
+}
+
+export async function deleteClosetItem(id: string): Promise<void> {
+  await api(`/api/clothing-items/${id}`, { method: "DELETE", auth: true });
 }

@@ -20,7 +20,7 @@ type Props = NativeStackScreenProps<RootStackParamList, "PostDetail">;
 
 export default function PostDetail({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
-  const { posts } = useAppContext();
+  const { posts, keepPost, isPostKept } = useAppContext();
   const post = posts.find((entry) => entry.id === route.params.postId);
 
   // いいねはローカルで楽観的にトグルしつつ、実際の状態は post_likes に永続化する
@@ -127,7 +127,37 @@ export default function PostDetail({ navigation, route }: Props) {
               </TouchableOpacity>
             </View>
 
-            <Text style={postDetailStyles.caption}>{post.caption}</Text>
+            <View style={postDetailStyles.captionRow}>
+              <Text style={postDetailStyles.caption}>{post.caption}</Text>
+              <TouchableOpacity
+                style={[
+                  postDetailStyles.keepButton,
+                  isPostKept(post.id) && postDetailStyles.keptButton,
+                ]}
+                onPress={() => keepPost(post)}
+                disabled={isPostKept(post.id)}
+                accessibilityRole="button"
+                accessibilityLabel={
+                  isPostKept(post.id)
+                    ? "クローゼットにキープ済み"
+                    : "このアイテムをクローゼットにキープする"
+                }
+              >
+                <Feather
+                  name={isPostKept(post.id) ? "check" : "bookmark"}
+                  size={16}
+                  color={isPostKept(post.id) ? "#4B2E1E" : "#fff"}
+                />
+                <Text
+                  style={[
+                    postDetailStyles.keepButtonText,
+                    isPostKept(post.id) && postDetailStyles.keptButtonText,
+                  ]}
+                >
+                  {isPostKept(post.id) ? "キープ済み" : "キープ"}
+                </Text>
+              </TouchableOpacity>
+            </View>
 
             <View style={postDetailStyles.actionsRow}>
               <TouchableOpacity style={postDetailStyles.actionButton} onPress={handleToggleLike}>

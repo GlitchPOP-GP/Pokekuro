@@ -18,7 +18,7 @@ export const fittingStyles = StyleSheet.create({
   },
 
   gridContainer: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     opacity: 0.12,
   },
 
@@ -39,9 +39,7 @@ export const fittingStyles = StyleSheet.create({
   },
 
   modelContainer: {
-    width: "80%",
-    maxWidth: 540,
+    width: "100%",
     height: "100%",
-    marginTop: 20,
   },
 });

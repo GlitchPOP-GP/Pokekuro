@@ -148,7 +148,6 @@ async function runGeminiPhase(jobId: number, sourceImagePath: string, category: 
     if (!geminiResult.success) throw new Error(`Gemini: ${geminiResult.error}`);
 
     const geminiPublicUrl = toPublicUrl(geminiOut);
-    await updateJob(jobId, { status: "awaiting_approval", gemini_image_path: geminiPublicUrl });
 
     // クローゼットに表示する画像も、撮影した写真ではなく Gemini 生成画像に差し替える
     const jobRow = await pool.query("SELECT clothing_item_id FROM fitting_jobs WHERE id = $1", [jobId]);
@@ -156,6 +155,10 @@ async function runGeminiPhase(jobId: number, sourceImagePath: string, category: 
       geminiPublicUrl,
       jobRow.rows[0].clothing_item_id,
     ]);
+
+    // アイテム画像を先に差し替え、awaiting_approvalを見たクライアントが
+    // 元写真を再取得する競合を防ぐ。
+    await updateJob(jobId, { status: "awaiting_approval", gemini_image_path: geminiPublicUrl });
 
     console.log(`[fitting-job ${jobId}] awaiting approval`);
   } catch (err: any) {

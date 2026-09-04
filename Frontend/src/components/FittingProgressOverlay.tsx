@@ -24,6 +24,22 @@ const STATUS_LABEL_BY_PHASE: Record<"gemini" | "meshy", Record<string, string>> 
   },
 };
 
+function getFriendlyErrorMessage(error: string | null): string {
+  if (!error) return "時間をおいて、もう一度お試しください。";
+
+  if (error.includes("API_KEY_INVALID") || error.includes("API key not valid")) {
+    return "Gemini APIキーが正しくありません。設定を確認してから再度お試しください。";
+  }
+  if (error.includes("GEMINI_API_KEY")) {
+    return "Gemini APIキーが設定されていません。";
+  }
+  if (error.includes("MESHY_API_KEY")) {
+    return "Meshy APIキーが設定されていません。";
+  }
+
+  return "3D生成処理でエラーが発生しました。時間をおいて再度お試しください。";
+}
+
 // 服の3D生成（Gemini → Meshy → Blenderフィッティング）の進捗を表示するオーバーレイ。
 // 数十秒〜数分かかるため、待つか・スキップして先に進むかを選べるようにしている。
 // awaiting_approval のときは Gemini が切り出した画像を表示し、
@@ -79,7 +95,7 @@ export default function FittingProgressOverlay({
         {status === "failed" ? (
           <>
             <Text style={styles.errorTitle}>3D生成に失敗しました</Text>
-            <Text style={styles.errorMessage}>{error}</Text>
+            <Text style={styles.errorMessage}>{getFriendlyErrorMessage(error)}</Text>
             <TouchableOpacity style={styles.button} onPress={onContinue} activeOpacity={0.8}>
               <Text style={styles.buttonText}>続ける</Text>
             </TouchableOpacity>
@@ -101,7 +117,7 @@ export default function FittingProgressOverlay({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.7)",
     justifyContent: "center",
     alignItems: "center",

@@ -60,6 +60,8 @@ export default function CameraScreen() {
             style={cameraStyles.captureCardWrapper}
             activeOpacity={0.9}
             onPress={handleCapture}
+            accessibilityRole="button"
+            accessibilityLabel="カメラを開いてアイテムを撮影する"
           >
             <CameraCaptureCard />
           </TouchableOpacity>

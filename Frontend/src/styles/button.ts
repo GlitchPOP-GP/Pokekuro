@@ -8,9 +8,9 @@ export const buttonStyles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
-        backgroundColor: "#000000",
+        backgroundColor: "#4B2E1E",
         borderWidth: 1,
-        borderColor: "#abababe7",
+        borderColor: "#4B2E1E",
     },
 
     disabled: {

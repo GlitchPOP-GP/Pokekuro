@@ -1,4 +1,6 @@
 import { getApiBaseUrl, getToken, ApiError } from "./client";
+import { Platform } from "react-native";
+import * as FileSystem from "expo-file-system/legacy";
 
 /**
  * 端末ローカルの file:// URI をサーバーにアップロードし、
@@ -13,30 +15,50 @@ export async function uploadImage(localUri: string): Promise<string> {
   const ext = match ? match[1].toLowerCase() : "jpg";
   const mime = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
 
-  const formData = new FormData();
-  // React Native の fetch/FormData は {uri, name, type} 形式のオブジェクトを
-  // ファイルパートとして受け付ける（Web の File/Blob とは異なる特有の書き方）。
-  formData.append("image", {
-    uri: localUri,
-    name: filename,
-    type: mime,
-  } as any);
+  let status: number;
+  let responseBody: string;
 
-  const res = await fetch(`${getApiBaseUrl()}/api/uploads`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      // Content-Type は自動設定させる（境界文字列が必要なため手動指定しない）
-    },
-    body: formData,
-  });
+  if (Platform.OS === "web") {
+    const fileResponse = await fetch(localUri);
+    const blob = await fileResponse.blob();
+    const formData = new FormData();
+    formData.append("image", blob, filename);
 
-  const text = await res.text();
-  const data = text ? JSON.parse(text) : null;
-
-  if (!res.ok) {
-    throw new ApiError(res.status, data?.error || "アップロードに失敗しました");
+    const response = await fetch(`${getApiBaseUrl()}/api/uploads`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    });
+    status = response.status;
+    responseBody = await response.text();
+  } else {
+    // SDK 57のFormDataは従来の { uri, name, type } パートを受け付けないため、
+    // Expoのネイティブmultipartアップローダーを使用する。
+    const response = await FileSystem.uploadAsync(
+      `${getApiBaseUrl()}/api/uploads`,
+      localUri,
+      {
+        httpMethod: "POST",
+        uploadType: FileSystem.FileSystemUploadType.MULTIPART,
+        fieldName: "image",
+        mimeType: mime,
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    status = response.status;
+    responseBody = response.body;
   }
 
-  return data.url as string;
+  let data: { url?: string; error?: string } | null = null;
+  try {
+    data = responseBody ? JSON.parse(responseBody) : null;
+  } catch {
+    throw new ApiError(status, "サーバーから不正な応答が返されました");
+  }
+
+  if (status < 200 || status >= 300 || !data?.url) {
+    throw new ApiError(status, data?.error || "アップロードに失敗しました");
+  }
+
+  return data.url;
 }

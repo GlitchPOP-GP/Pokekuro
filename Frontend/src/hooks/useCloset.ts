@@ -1,38 +1,21 @@
-import { useState, useCallback, useMemo } from "react";
-import { useFocusEffect } from "@react-navigation/native";
-import { ClosetItem } from "../types/closet";
-import { fetchClosetItems } from "../api/closet";
+import { useMemo, useState } from "react";
+import { useAppContext } from "../store/AppContent";
 
 export type ClosetCategory = "shirt" | "pants" | "cap" | "bookmark" | "heart";
 
 export function useCloset() {
-  const [items, setItems] = useState<ClosetItem[]>([]);
+  const { closetItems: items } = useAppContext();
   const [selectedCategory, setSelectedCategory] = useState<ClosetCategory>("shirt");
   const [selectedTags, setSelectedTags] = useState<string[]>([""]);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // 画面にフォーカスが戻るたびに再取得する。
-  // （タブは一度マウントされると生き続けるので、他の画面でアイテムを追加した後
-  //   このタブに戻ってきた時に glb_url 等の最新状態を反映させるために必要）
-  useFocusEffect(
-    useCallback(() => {
-      let active = true;
-      setIsLoading(true);
-      fetchClosetItems().then((data) => {
-        if (active) {
-          setItems(data);
-          setIsLoading(false);
-        }
-      });
-      return () => {
-        active = false;
-      };
-    }, [])
+  const visibleItems = useMemo(
+    () => items.filter((item) => item.fittingStatus !== "failed"),
+    [items]
   );
 
   const tags = useMemo(() => {
     const uniqueTags: string[] = [];
-    items.forEach((item) => {
+    visibleItems.forEach((item) => {
       if (item && Array.isArray(item.tags)) {
         item.tags.forEach((tag) => {
           if (tag && !uniqueTags.includes(tag)) {
@@ -42,12 +25,14 @@ export function useCloset() {
       }
     });
     return uniqueTags;
-  }, [items]);
+  }, [visibleItems]);
 
   const activeTags = selectedTags.filter((tag) => tag !== "");
 
-  const filteredItems = items.filter((item) => {
-    const matchesCategory = item.category === selectedCategory;
+  const filteredItems = visibleItems.filter((item) => {
+    const matchesCategory = selectedCategory === "bookmark"
+      ? item.originalItemId?.startsWith("post:")
+      : item.category === selectedCategory;
     const matchesTags =
       activeTags.length === 0 ||
       item.tags.some((tag) => activeTags.includes(tag));
@@ -55,13 +40,13 @@ export function useCloset() {
   });
 
   return {
-    items,
+    items: visibleItems,
     selectedCategory,
     setSelectedCategory,
     selectedTags,
     setSelectedTags,
     tags,
     filteredItems,
-    isLoading,
+    isLoading: false,
   };
 }

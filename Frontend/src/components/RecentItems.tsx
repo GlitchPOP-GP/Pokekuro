@@ -11,7 +11,9 @@ import type { TabParamList } from "../navigation/tabs";
 export default function RecentItems() {
   const { closetItems } = useAppContext();
   const navigation = useNavigation<BottomTabNavigationProp<TabParamList>>();
-  const displayItems = closetItems.slice(0, 6);
+  const displayItems = closetItems
+    .filter((item) => item.fittingStatus !== "failed" && !item.originalItemId)
+    .slice(0, 6);
 
   return (
     <View style={recentItemsStyles.container}>

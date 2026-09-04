@@ -27,7 +27,10 @@ router.get(
 
     const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
     const result = await pool.query(
-      `SELECT ci.*, COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags
+      `SELECT ci.*,
+              COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags,
+              (SELECT fj.status FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS fitting_status,
+              (SELECT fj.gemini_image_path FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS gemini_image_path
        FROM clothing_items ci
        LEFT JOIN clothing_item_tags cit ON cit.clothing_item_id = ci.id
        LEFT JOIN tags t ON t.id = cit.tag_id
@@ -46,7 +49,10 @@ router.get(
   requireAuth,
   ah<AuthedRequest>(async (req, res) => {
     const result = await pool.query(
-      `SELECT ci.*, COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags
+      `SELECT ci.*,
+              COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags,
+              (SELECT fj.status FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS fitting_status,
+              (SELECT fj.gemini_image_path FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS gemini_image_path
        FROM clothing_items ci
        LEFT JOIN clothing_item_tags cit ON cit.clothing_item_id = ci.id
        LEFT JOIN tags t ON t.id = cit.tag_id
@@ -64,7 +70,10 @@ router.get(
   requireAuth,
   ah<AuthedRequest>(async (req, res) => {
     const result = await pool.query(
-      `SELECT ci.* FROM clothing_items ci
+      `SELECT ci.*,
+              (SELECT fj.status FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS fitting_status,
+              (SELECT fj.gemini_image_path FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS gemini_image_path
+       FROM clothing_items ci
        JOIN item_favorites f ON f.clothing_item_id = ci.id
        WHERE f.user_id = $1
        ORDER BY ci.id DESC`,
@@ -78,7 +87,10 @@ router.get(
   "/:id",
   ah(async (req, res) => {
     const result = await pool.query(
-      `SELECT ci.*, COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags
+      `SELECT ci.*,
+              COALESCE(array_agg(t.tag_name) FILTER (WHERE t.tag_name IS NOT NULL), '{}') AS tags,
+              (SELECT fj.status FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS fitting_status,
+              (SELECT fj.gemini_image_path FROM fitting_jobs fj WHERE fj.clothing_item_id = ci.id ORDER BY fj.id DESC LIMIT 1) AS gemini_image_path
        FROM clothing_items ci
        LEFT JOIN clothing_item_tags cit ON cit.clothing_item_id = ci.id
        LEFT JOIN tags t ON t.id = cit.tag_id
